@@ -93,14 +93,14 @@ The sampling configuration is injected at pod start time. Restart the applicatio
 
 [source,role="execute"]
 ----
-oc rollout restart deployment/frontend deployment/backend1 deployment/backend2 -n tutorial-application
+oc rollout restart deployment/frontend deployment/backend1 deployment/backend2 -n {tutorial_namespace}
 ----
 
 Wait for the rollout to complete:
 
 [source,role="execute"]
 ----
-oc rollout status deployment/frontend -n tutorial-application
+oc rollout status deployment/frontend -n {tutorial_namespace}
 ----
 
 Expected output:
@@ -113,7 +113,7 @@ deployment "frontend" successfully rolled out
 
 Open the OpenShift Console and navigate to *Observe -> Metrics*. Run the following PromQL query:
 
-[source,role="execute"]
+[source,role="copypaste"]
 ----
 sum(rate(telemetry_spans_count[5m]))
 ----
@@ -203,14 +203,14 @@ instrumentation.opentelemetry.io/my-instrumentation configured
 
 [source,role="execute"]
 ----
-oc rollout restart deployment/frontend deployment/backend1 deployment/backend2 -n tutorial-application
+oc rollout restart deployment/frontend deployment/backend1 deployment/backend2 -n {tutorial_namespace}
 ----
 
 Wait for the rollout to complete:
 
 [source,role="execute"]
 ----
-oc rollout status deployment/frontend -n tutorial-application
+oc rollout status deployment/frontend -n {tutorial_namespace}
 ----
 
 Expected output:

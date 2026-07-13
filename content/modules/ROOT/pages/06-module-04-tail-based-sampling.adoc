@@ -18,7 +18,7 @@ Before applying any configuration, take a moment to understand how the tail samp
 
 === How it works
 
-. The collector receives spans from instrumented applications over OTLP.
+. The collector receives spans from instrumented applications over OTLP (OpenTelemetry Protocol).
 
 . Incoming spans are grouped by their *trace ID* and buffered in memory.
 

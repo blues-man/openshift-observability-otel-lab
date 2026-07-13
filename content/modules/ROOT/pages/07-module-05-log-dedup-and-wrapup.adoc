@@ -91,13 +91,17 @@ spec:
 
     exporters:
       otlphttp/tempo:
-        endpoint: "http://tempo-simplest-gateway.tempo-observability.svc:8090/api/traces/v1/default"
+        endpoint: "https://tempo-tempo-gateway.observability-traces.svc:8090/api/traces/v1/dev"
         tls:
-          insecure: true
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+        headers:
+          Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
       otlphttp/loki:
-        endpoint: "http://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+        endpoint: "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application/loki/api/v1/push"
         tls:
-          insecure: true
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+        headers:
+          Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
       otlphttp/metrics:
         endpoint: "http://monitoringstack-sample.coo-observability.svc:9090/api/v1/otlp"
         tls:

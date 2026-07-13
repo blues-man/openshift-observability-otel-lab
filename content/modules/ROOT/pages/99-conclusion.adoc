@@ -8,7 +8,7 @@ Over five hands-on modules you built a production-grade observability pipeline o
 
 == What You Accomplished
 
-* *Module 1* -- Explored the pre-deployed observability stack: OpenTelemetry Operator, TempoStack, LokiStack, Cluster Observability Operator, and the OpenShift Console integrations.
+* *Module 1* -- Explored the pre-deployed observability stack: OpenTelemetry Operator, TempoStack, LokiStack, Cluster Observability Operator (COO), and the OpenShift Console integrations.
 
 * *Module 2* -- Deployed the dice game application, auto-instrumented it with OpenTelemetry, and profiled the baseline telemetry volume to understand cost drivers.
 
@@ -38,7 +38,7 @@ Now that you have the foundational skills, here are areas to explore on your own
 
 * *Implement the scalable two-tier tail sampling architecture for production.* Deploy a routing collector tier that groups spans by trace ID and forwards complete traces to a sampling tier. This pattern scales horizontally across large clusters.
 
-* *Investigate OpenShift's built-in monitoring stack integration with OTLP.* The COO MonitoringStack's OTLP HTTP receiver lets you push OpenTelemetry metrics directly to Prometheus -- explore how this simplifies metrics pipelines.
+* *Investigate OpenShift's built-in monitoring stack integration with OTLP (OpenTelemetry Protocol).* The COO MonitoringStack's OTLP HTTP receiver lets you push OpenTelemetry metrics directly to Prometheus -- explore how this simplifies metrics pipelines.
 
 == References
 

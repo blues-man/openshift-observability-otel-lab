@@ -52,18 +52,18 @@ All operators are installed from the *redhat-operators* catalog source.
 | Backend | Namespace
 
 | TempoStack
-| `tempo-observability`
+| `{tempo_namespace}`
 
 | LokiStack
-| `openshift-logging`
+| `{loki_namespace}`
 
 | COO MonitoringStack
-| `coo-observability`
+| `{coo_namespace}`
 |===
 
 == Application Namespace
 
-The dice game application runs in the `tutorial-application` namespace. All lab exercises deploy workloads into this namespace.
+The dice game application runs in the `{tutorial_namespace}` namespace. All lab exercises deploy workloads into this namespace.
 
 == Terminal Access
 
