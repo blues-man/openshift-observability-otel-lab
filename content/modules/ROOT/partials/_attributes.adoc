@@ -1,0 +1,25 @@
+// Environment attributes — injected by Showroom user_data or set manually
+:ocp_version: %ocp_version%
+:console_url: %openshift_console_url%
+:api_url: %openshift_api_url%
+:user: %user_name%
+:password: %user_password%
+:bastion_host: %bastion_public_hostname%
+
+// Lab-specific attributes
+:lab_title: OpenShift Observability with OpenTelemetry
+:tutorial_namespace: tutorial-application
+:tempo_namespace: tempo-observability
+:loki_namespace: openshift-logging
+:coo_namespace: coo-observability
+:collector_name: otel-collector
+:tempo_name: simplest
+:loki_name: logging-loki
+
+// Product versions
+:otel_collector_version: 0.147.0
+:otel_operator_channel: stable
+:tempo_operator_channel: stable
+:loki_operator_channel: stable-6.2
+:coo_operator_channel: stable
+:logging_operator_channel: stable-6.1

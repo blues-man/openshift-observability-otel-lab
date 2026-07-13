@@ -1,0 +1,29 @@
+showroom:
+  enabled: true
+  namespace: showroom
+  name: showroom
+  content:
+    repoUrl: ""
+    repoRef: "main"
+    antoraPlaybook: "site.yml"
+    image: "quay.io/rhpds/showroom-content:v1.3.1"
+  nookbag:
+    enabled: false
+    bundleUrl: ""
+  terminal:
+    enabled: true
+    image: "quay.io/rhpds/openshift-showroom-terminal-ocp:latest"
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+
+deployer:
+  domain: ""
+
+demo:
+  namespace: ""
+  appName: ""

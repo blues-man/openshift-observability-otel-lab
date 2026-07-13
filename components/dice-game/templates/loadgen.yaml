@@ -1,0 +1,37 @@
+{{- if and .Values.app.enabled .Values.app.loadgen.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loadgen
+  namespace: {{ .Values.app.namespace }}
+  labels:
+    app: loadgen
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loadgen
+  template:
+    metadata:
+      labels:
+        app: loadgen
+    spec:
+      containers:
+        - name: loadgen
+          image: {{ .Values.app.loadgen.image }}
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              PLAYERS="Pavol Benedikt Yuri Kristina Severin"
+              while true; do
+                for player in $PLAYERS; do
+                  curl -s -o /dev/null "http://frontend:4000/rolldice?player=${player}"
+                  sleep 0.$(( RANDOM % 5 + 1 ))
+                done
+              done
+{{- end }}

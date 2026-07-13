@@ -1,0 +1,124 @@
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-collector
+  namespace: tutorial-application
+spec:
+  mode: deployment
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    connectors:
+      count:
+        spans:
+          telemetry.spans.count:
+            description: "Total number of spans"
+            conditions:
+              - 'attributes["http.route"] != "/health"'
+            attributes:
+              - key: service.name
+                default_value: unknown
+              - key: k8s.namespace.name
+                default_value: unknown
+          telemetry.spans.high_cardinality.count:
+            description: "Spans with more than 10 attributes"
+            conditions:
+              - 'Len(attributes) > 10'
+            attributes:
+              - key: service.name
+                default_value: unknown
+          telemetry.spans.health.count:
+            description: "Health check spans"
+            conditions:
+              - 'attributes["http.route"] == "/health"'
+            attributes:
+              - key: service.name
+                default_value: unknown
+        logs:
+          telemetry.logs.count:
+            description: "Total number of logs"
+            attributes:
+              - key: service.name
+                default_value: unknown
+              - key: k8s.namespace.name
+                default_value: unknown
+          telemetry.logs.debug.count:
+            description: "Debug-level logs"
+            conditions:
+              - 'severity_number < 9'
+            attributes:
+              - key: service.name
+                default_value: unknown
+          telemetry.logs.large.count:
+            description: "Log bodies larger than 1000 bytes"
+            conditions:
+              - 'Len(body) > 1000'
+            attributes:
+              - key: service.name
+                default_value: unknown
+
+    processors:
+      batch:
+        send_batch_size: 10000
+        timeout: 10s
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 4000
+        spike_limit_mib: 800
+      filter/drop-debug-logs:
+        error_mode: ignore
+        logs:
+          log_record:
+            - 'severity_number < 9'
+      filter/drop-large-logs:
+        error_mode: ignore
+        logs:
+          log_record:
+            - 'Len(body) > 1000'
+      filter/drop-health-spans:
+        error_mode: ignore
+        traces:
+          span:
+            - 'attributes["http.route"] == "/health"'
+
+    exporters:
+      otlphttp/tempo:
+        endpoint: "https://tempo-simplest-gateway.tempo-observability.svc:8090/api/traces/v1/dev"
+        tls:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+        headers:
+          Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
+      otlphttp/loki:
+        endpoint: "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+        tls:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+        headers:
+          Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
+      prometheus:
+        endpoint: 0.0.0.0:8889
+      debug:
+        verbosity: basic
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, filter/drop-health-spans, batch]
+          exporters: [otlphttp/tempo, count, debug]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, filter/drop-debug-logs, filter/drop-large-logs, batch]
+          exporters: [otlphttp/loki, count, debug]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [debug]
+        metrics/count:
+          receivers: [count]
+          exporters: [prometheus]

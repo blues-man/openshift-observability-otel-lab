@@ -1,0 +1,236 @@
+include::partial$_attributes.adoc[]
+
+= Module 5: Log Deduplication and Optimization Wrap-Up
+
+****
+*Duration:* ~15 minutes
+****
+
+Duplicate log entries are common in microservices -- retries, periodic status messages, and verbose frameworks generate identical lines that consume storage without adding insight.
+The `logdedup` processor aggregates duplicates over configurable time windows, emitting a single representative log with a count attribute.
+In this module you will enable log deduplication and then review the full set of optimization techniques covered in this workshop.
+
+== Exercise 1: Understand the Log Deduplication Problem
+
+The `backend3` service (Go) intentionally generates verbose debug logs.
+Among them, "TODO: remove before production" messages repeat on every request -- a pattern that is surprisingly common in real-world microservices where developers leave temporary logging in place.
+
+=== Step 1 -- Check Current Log Volume
+
+Open the OpenShift Console and navigate to *Observe -> Logs*.
+Filter for the `{tutorial_namespace}` namespace.
+
+[source,role="execute"]
+----
+oc logs deployment/backend3 -n {tutorial_namespace} --tail=30
+----
+
+Scroll through the output and note how many identical lines appear.
+Repetitive entries such as `TODO: remove before production` and periodic health-status messages dominate the log stream.
+
+=== Step 2 -- Count Duplicate Lines
+
+Run a quick duplicate analysis directly on the pod logs:
+
+[source,role="execute"]
+----
+oc logs deployment/backend3 -n {tutorial_namespace} --tail=200 | sort | uniq -c | sort -rn | head -10
+----
+
+The output shows the most frequently repeated log lines, confirming that a small number of messages account for a large share of total volume.
+
+== Exercise 2: Enable Log Deduplication
+
+Re-apply the data-profiling collector configuration with the `logdedup` processor added to the logs pipeline.
+
+=== Step 1 -- Apply the Updated Collector CR
+
+[source,role="execute"]
+----
+oc apply -f - <<'EOF'
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-collector
+  namespace: tutorial-application
+spec:
+  mode: deployment
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 15
+      batch:
+        send_batch_size: 10000
+        timeout: 10s
+      filter/drop-debug-logs:
+        error_mode: ignore
+        logs:
+          log_record:
+            - 'severity_number < SEVERITY_NUMBER_INFO'
+      filter/drop-large-logs:
+        error_mode: ignore
+        logs:
+          log_record:
+            - 'Len(body) > 4096'
+      logdedup:
+        interval: 10s
+        log_count_attribute: log_count
+        timezone: UTC
+        conditions:
+          - 'body == body'
+
+    exporters:
+      otlphttp/tempo:
+        endpoint: "http://tempo-simplest-gateway.tempo-observability.svc:8090/api/traces/v1/default"
+        tls:
+          insecure: true
+      otlphttp/loki:
+        endpoint: "http://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+        tls:
+          insecure: true
+      otlphttp/metrics:
+        endpoint: "http://monitoringstack-sample.coo-observability.svc:9090/api/v1/otlp"
+        tls:
+          insecure: true
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp/tempo]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, filter/drop-debug-logs, filter/drop-large-logs, logdedup, batch]
+          exporters: [otlphttp/loki]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp/metrics]
+EOF
+----
+
+Expected output:
+
+----
+opentelemetrycollector.opentelemetry.io/otel-collector configured
+----
+
+Notice the logs pipeline order: `otlp -> memory_limiter -> filter/drop-debug-logs -> filter/drop-large-logs -> logdedup -> batch -> otlphttp/loki`.
+The deduplication processor sits after filtering (so it only deduplicates logs worth keeping) and before batching (so the batch exporter sees the reduced volume).
+
+=== Step 2 -- Wait for the Collector to Restart
+
+[source,role="execute"]
+----
+oc rollout status deployment/otel-collector -n {tutorial_namespace}
+----
+
+Expected output:
+
+----
+deployment "otel-collector" successfully rolled out
+----
+
+=== How logdedup Works
+
+The `logdedup` processor groups log records with identical bodies over the configured `interval` (10 seconds in this lab).
+At the end of each window it emits a single representative log entry with an added `log_count` attribute indicating how many duplicates were aggregated.
+
+[source,yaml]
+----
+logdedup:
+  interval: 10s
+  log_count_attribute: log_count
+  timezone: UTC
+  conditions:
+    - 'body == body'
+----
+
+* *interval* -- the time window over which duplicates are grouped.
+* *log_count_attribute* -- the attribute name added to deduplicated entries.
+* *conditions* -- OTTL expressions that define what makes two logs "identical". Here, matching on `body` means any logs with the same message text are grouped.
+
+== Exercise 3: Verify Deduplication
+
+=== Step 1 -- Query Deduplicated Logs
+
+Navigate to *Observe -> Logs* in the OpenShift Console.
+Filter for the `{tutorial_namespace}` namespace and look for log entries that include the `log_count` attribute.
+
+Logs that previously appeared dozens of times per window now appear once with a `log_count` value showing the original frequency.
+
+=== Step 2 -- Compare Log Volume
+
+Compare the log volume in the console before and after enabling deduplication.
+You should observe a noticeable reduction in the total number of log entries, particularly for the repetitive messages from `backend3`.
+
+image::log-dedup-before-after.png[Observe Logs view showing deduplicated entries with log_count attribute,link=self,window=blank,width=700,title="Log Deduplication Before and After"]
+
+== Exercise 4: Optimization Strategy Recap
+
+Across this workshop you have applied four distinct optimization techniques.
+The following table summarizes when to use each one.
+
+[cols="1,1,2,2,2",options="header"]
+|===
+| Technique | Stage | Pros | Cons | Best For
+
+| Filter processors
+| Collector
+| Simple, deterministic
+| Drops all matching data
+| Known noise (health checks, debug logs)
+
+| Head-based sampling
+| SDK / Collector
+| Low overhead, simple
+| Blind to outcomes
+| Uniform cost reduction
+
+| Tail-based sampling
+| Collector
+| Outcome-aware, smart
+| High memory, needs routing
+| Error / latency retention
+
+| Log deduplication
+| Collector
+| Reduces repetition
+| Adds latency (window)
+| Repetitive log patterns
+|===
+
+=== Production Layering Strategy
+
+In production, combine these techniques in layers for maximum effect:
+
+. *Filter known noise at the collector* -- drop health checks, debug logs, and internal readiness probes using filter processors.
+
+. *Use head-based sampling for baseline cost reduction* -- apply a ratio sampler at the SDK or collector level to uniformly reduce trace volume.
+
+. *Add tail-based sampling for error and latency retention* -- route all traces through a tail-sampling collector that keeps 100% of error and high-latency traces while sampling the rest.
+
+. *Enable log deduplication for repetitive patterns* -- aggregate identical log messages to reduce storage costs without losing visibility.
+
+Each layer addresses a different class of noise, and together they can reduce observability costs by 60--80% while preserving full visibility into errors and performance anomalies.
+
+== Learning Outcomes
+
+After completing this module you should be able to:
+
+* Configure the `logdedup` processor to aggregate duplicate log entries and reduce storage costs.
+
+* Understand when to combine multiple optimization techniques and how they complement each other in a layered strategy.
+
+* Choose the right sampling and filtering strategy for different observability scenarios -- from simple noise removal to outcome-aware trace retention.

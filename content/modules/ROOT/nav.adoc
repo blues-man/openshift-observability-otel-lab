@@ -1,0 +1,12 @@
+* xref:index.adoc[Home]
+
+* xref:01-overview.adoc[Lab Overview]
+* xref:02-details.adoc[Environment Details]
+
+* xref:03-module-01-deploy-observability-stack.adoc[Module 1: Deploy the Observability Stack]
+* xref:04-module-02-deploy-app-and-profile.adoc[Module 2: Deploy the App and Profile Telemetry]
+* xref:05-module-03-head-based-sampling.adoc[Module 3: Head-Based Sampling]
+* xref:06-module-04-tail-based-sampling.adoc[Module 4: Tail-Based Sampling]
+* xref:07-module-05-log-dedup-and-wrapup.adoc[Module 5: Log Deduplication and Wrap-Up]
+
+* xref:99-conclusion.adoc[Conclusion]

@@ -1,0 +1,298 @@
+include::partial$_attributes.adoc[]
+
+= Module 1: Explore the Observability Stack
+
+[cols="1h,3"]
+|===
+| Duration | ~20 minutes
+| Objective | Verify the pre-deployed observability stack and understand how each component fits the architecture
+|===
+
+The full observability stack -- operators, backends, and console integrations -- has been pre-deployed to this cluster via ArgoCD GitOps.
+In this module you will walk through every layer to confirm it is healthy and understand how the pieces connect before you start generating telemetry.
+
+== Exercise 1: Verify Operators
+
+Five operators power the observability stack.
+Confirm that each Subscription exists and that every ClusterServiceVersion has reached the *Succeeded* phase.
+
+=== Step 1 -- Check Subscriptions
+
+[source,role="execute"]
+----
+oc get subscriptions.operators.coreos.com -A | grep -E 'opentelemetry|tempo|loki|cluster-observability|cluster-logging'
+----
+
+You should see output similar to:
+
+----
+openshift-opentelemetry-operator   opentelemetry-product   stable          ...
+openshift-tempo-operator           tempo-product           stable          ...
+openshift-loki-operator            loki-operator           stable-6.2      ...
+openshift-cluster-observability    cluster-observability   stable          ...
+openshift-logging                  cluster-logging         stable-6.1      ...
+----
+
+=== Step 2 -- Check CSVs
+
+[source,role="execute"]
+----
+oc get csv -A | grep -E 'opentelemetry|tempo|loki|observability|logging'
+----
+
+Every CSV should show *Succeeded* in the `PHASE` column:
+
+----
+openshift-opentelemetry-operator   opentelemetry-operator.v...   Succeeded
+openshift-tempo-operator           tempo-operator.v...           Succeeded
+openshift-loki-operator            loki-operator.v...            Succeeded
+openshift-cluster-observability    cluster-observability...      Succeeded
+openshift-logging                  cluster-logging.v...          Succeeded
+----
+
+=== What each operator provides
+
+* *Red Hat build of OpenTelemetry Operator* -- manages OpenTelemetry Collector instances (sidecars, deployments, DaemonSets) and the Instrumentation CR for auto-instrumentation.
+
+* *Tempo Operator* -- deploys and manages TempoStack, the distributed tracing backend that replaces standalone Jaeger.
+
+* *Loki Operator* -- deploys and manages LokiStack, the horizontally-scalable log aggregation backend.
+
+* *Cluster Observability Operator (COO)* -- provides MonitoringStack CRs and UIPlugin CRs for native OpenShift Console integrations (traces, logs, dashboards).
+
+* *Red Hat OpenShift Logging Operator* -- manages ClusterLogForwarder to route application and infrastructure logs into LokiStack.
+
+== Exercise 2: Explore the Tracing Backend (TempoStack)
+
+TempoStack is the OpenShift-native distributed tracing backend.
+It stores traces in S3-compatible object storage -- in this lab a MinIO instance provides that storage.
+
+=== Step 1 -- Inspect the TempoStack CR
+
+[source,role="execute"]
+----
+oc get tempostack -n {tempo_namespace}
+----
+
+Expected output:
+
+----
+NAME       AGE    VERSION   STATUS   STORAGE SECRET
+simplest   ...    ...       Ready    minio-secret
+----
+
+The *Ready* status confirms that Tempo is up and connected to its storage backend.
+
+=== Step 2 -- Check Tempo pods
+
+[source,role="execute"]
+----
+oc get pods -n {tempo_namespace}
+----
+
+You should see pods for the Tempo compactor, distributor, ingester, querier, query-frontend, and the gateway:
+
+----
+NAME                                        READY   STATUS    RESTARTS   AGE
+tempo-simplest-compactor-...                1/1     Running   0          ...
+tempo-simplest-distributor-...              1/1     Running   0          ...
+tempo-simplest-ingester-...                 1/1     Running   0          ...
+tempo-simplest-querier-...                  1/1     Running   0          ...
+tempo-simplest-query-frontend-...           1/1     Running   0          ...
+tempo-simplest-gateway-...                  1/1     Running   0          ...
+----
+
+=== Step 3 -- Check the Tempo route
+
+[source,role="execute"]
+----
+oc get routes -n {tempo_namespace}
+----
+
+----
+NAME                      HOST/PORT                               ...
+tempo-simplest-gateway    tempo-simplest-gateway-tempo-...        ...
+----
+
+The gateway route exposes the Jaeger Query-compatible UI and the gRPC/HTTP endpoints that OpenTelemetry Collectors send traces to.
+
+[NOTE]
+====
+A *UIPlugin* (covered in Exercise 5) integrates the Tempo query interface directly into the OpenShift Console under *Observe -> Traces*, so you rarely need to access the raw route.
+====
+
+== Exercise 3: Explore the Logging Backend (LokiStack)
+
+LokiStack provides horizontally-scalable log aggregation.
+The Logging Operator's *ClusterLogForwarder* routes application and infrastructure logs into LokiStack.
+
+=== Step 1 -- Inspect the LokiStack CR
+
+[source,role="execute"]
+----
+oc get lokistack -n {loki_namespace}
+----
+
+Expected output:
+
+----
+NAME           CONDITION TYPE   CONDITION STATUS   STATUS
+logging-loki   Ready            True               ...
+----
+
+=== Step 2 -- Inspect the ClusterLogForwarder
+
+[source,role="execute"]
+----
+oc get clusterlogforwarder -n {loki_namespace}
+----
+
+----
+NAME       AGE
+instance   ...
+----
+
+View its configuration:
+
+[source,role="execute"]
+----
+oc get clusterlogforwarder instance -n {loki_namespace} -o yaml | head -40
+----
+
+Key things to notice in the output:
+
+* *inputs* -- which log types are collected (application, infrastructure, or both).
+
+* *outputs* -- the LokiStack endpoint where logs are forwarded.
+
+* *pipelines* -- the rules that connect inputs to outputs.
+
+=== How the pieces fit together
+
+The Logging Operator deploys a collector DaemonSet that reads container logs from every node.
+The ClusterLogForwarder tells those collectors *what* to collect and *where* to send it -- in this lab, everything goes to the LokiStack instance running in `{loki_namespace}`.
+
+== Exercise 4: Explore Monitoring
+
+OpenShift ships with a built-in Prometheus stack for platform metrics.
+In this lab, *User Workload Monitoring* is enabled so application metrics are also collected, and the Cluster Observability Operator adds an OTLP-capable *MonitoringStack*.
+
+=== Step 1 -- Verify User Workload Monitoring
+
+[source,role="execute"]
+----
+oc get configmap cluster-monitoring-config -n openshift-monitoring -o yaml
+----
+
+Look for `enableUserWorkload: true` in the output:
+
+[source,yaml]
+----
+apiVersion: v1
+data:
+  config.yaml: |
+    enableUserWorkload: true
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+----
+
+When User Workload Monitoring is enabled, a separate Prometheus instance scrapes ServiceMonitors and PodMonitors in user namespaces.
+
+=== Step 2 -- Check the COO MonitoringStack
+
+[source,role="execute"]
+----
+oc get monitoringstack -n {coo_namespace}
+----
+
+----
+NAME                 AGE
+monitoringstack-sample   ...
+----
+
+Inspect its specification:
+
+[source,role="execute"]
+----
+oc get monitoringstack -n {coo_namespace} -o yaml | grep -A5 otlp
+----
+
+You should see an OTLP HTTP receiver enabled in the MonitoringStack spec:
+
+----
+    prometheusConfig:
+      otlpConfig:
+        receiverConfig:
+          otlpHTTPConfig:
+            enabled: true
+----
+
+[TIP]
+====
+The OTLP HTTP receiver lets the OpenTelemetry Collector push metrics directly to the COO MonitoringStack using the native OpenTelemetry protocol -- no Prometheus remote-write adapter needed.
+====
+
+== Exercise 5: Verify Console Plugins
+
+The Cluster Observability Operator registers *UIPlugins* that add observability views to the OpenShift Console.
+
+=== Step 1 -- List UIPlugins
+
+[source,role="execute"]
+----
+oc get uiplugin
+----
+
+Expected output:
+
+----
+NAME             AGE
+logging          ...
+distributed-tracing   ...
+----
+
+These plugins inject the *Observe -> Logs* and *Observe -> Traces* pages into the console.
+
+=== Step 2 -- Explore the Console
+
+Open the OpenShift Console at:
+
+{console_url}
+
+Navigate to each of the integrated observability views:
+
+. *Observe -> Logs* -- powered by the LokiStack integration.
+Browse application and infrastructure logs using LogQL queries.
+
+. *Observe -> Traces* -- powered by the TempoStack integration.
+Search for traces by service name, operation, duration, or trace ID.
+
+image::console-observe-traces-placeholder.png[OpenShift Console - Observe Traces view,link=self,window=blank]
+
+image::console-observe-logs-placeholder.png[OpenShift Console - Observe Logs view,link=self,window=blank]
+
+[NOTE]
+====
+If the console plugins are not yet visible, refresh the browser.
+The plugins register asynchronously and may take a moment after operator deployment.
+====
+
+== Learning Outcomes
+
+After completing this module you should be able to:
+
+* Identify the five operators that compose the OpenShift observability stack and explain each operator's role.
+
+* Describe how *TempoStack* stores and queries distributed traces using S3-compatible object storage.
+
+* Explain how *LokiStack* and the *ClusterLogForwarder* work together to collect and aggregate logs.
+
+* Understand how the COO *MonitoringStack* accepts metrics via its OTLP HTTP receiver.
+
+* Navigate the OpenShift Console's integrated *Observe -> Traces* and *Observe -> Logs* views powered by UIPlugins.
+
+== Next Steps
+
+In the next module you will deploy a sample application, instrument it with OpenTelemetry, and profile the baseline telemetry volume before applying sampling strategies.

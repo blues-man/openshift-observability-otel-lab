@@ -1,0 +1,20 @@
+{{- if and .Values.app.enabled .Values.app.userInfo.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dice-game-userinfo
+  namespace: {{ .Values.app.namespace }}
+  labels:
+    demo.redhat.com/userinfo: ""
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+data:
+  title: {{ .Values.app.userInfo.title | quote }}
+  showroom_url: "https://showroom.{{ .Values.deployer.domain }}"
+  instructions: |
+    The dice game application is deployed in the {{ .Values.app.namespace }} namespace.
+    It consists of a Node.js frontend, Python backend1, Java backend2, and Go backend3.
+    All services are instrumented with OpenTelemetry for distributed tracing, logging, and metrics.
+    Access the application via the frontend route on port 4000.
+{{- end }}

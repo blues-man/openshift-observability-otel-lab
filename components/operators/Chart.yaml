@@ -1,0 +1,5 @@
+apiVersion: v2
+name: observability-operators
+description: OLM Subscriptions for observability operators
+type: application
+version: 0.1.0

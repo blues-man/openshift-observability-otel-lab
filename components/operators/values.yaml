@@ -1,0 +1,42 @@
+operators:
+  enabled: true
+  opentelemetry:
+    enabled: true
+    name: opentelemetry-product
+    namespace: openshift-opentelemetry-operator
+    channel: stable
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+    installPlanApproval: Automatic
+  tempo:
+    enabled: true
+    name: tempo-product
+    namespace: openshift-tempo-operator
+    channel: stable
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+    installPlanApproval: Automatic
+  loki:
+    enabled: true
+    name: loki-operator
+    namespace: openshift-operators-redhat
+    channel: stable-6.2
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+    installPlanApproval: Automatic
+  clusterObservability:
+    enabled: true
+    name: cluster-observability-operator
+    namespace: openshift-cluster-observability-operator
+    channel: stable
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+    installPlanApproval: Automatic
+  clusterLogging:
+    enabled: true
+    name: cluster-logging
+    namespace: openshift-logging
+    channel: stable-6.1
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+    installPlanApproval: Automatic

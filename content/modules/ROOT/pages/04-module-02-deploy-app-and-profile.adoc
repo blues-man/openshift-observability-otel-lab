@@ -1,0 +1,389 @@
+include::partial$_attributes.adoc[]
+
+= Module 2: Deploy the Application and Profile Telemetry
+
+[sidebar]
+****
+*Duration:* ~20 minutes
+
+In this module you will explore the pre-deployed polyglot dice game application, verify that telemetry is flowing end-to-end, and then apply a *count connector* to profile how much data each service generates -- setting the stage for targeted optimization in later modules.
+****
+
+== Exercise 1: Explore the Application
+
+The dice game application is already running in the `{tutorial_namespace}` namespace, deployed via ArgoCD. It consists of four microservices:
+
+* *frontend* (Node.js / Express, port 4000) -- orchestrates the dice game UI and calls backend roll endpoints.
+
+* *backend1* (Python / Flask, port 5000) -- dice roller with intentional latency bugs.
+
+* *backend2* (Java / Spring Boot, port 5165) -- dice roller that emits warning-level logs.
+
+* *backend3* (Go, port 5165) -- dice roller with verbose debug logs and injected errors.
+
+A load generator sends continuous traffic so you always have fresh telemetry to work with.
+
+=== Check Deployments and Pods
+
+Verify that all components are running:
+
+[source,role="execute"]
+----
+oc get deployments -n {tutorial_namespace}
+----
+
+You should see output similar to:
+
+----
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+frontend         1/1     1            1           10m
+backend1         1/1     1            1           10m
+backend2         1/1     1            1           10m
+backend3         1/1     1            1           10m
+loadgenerator    1/1     1            1           10m
+----
+
+Confirm that all pods are in a *Running* state:
+
+[source,role="execute"]
+----
+oc get pods -n {tutorial_namespace}
+----
+
+=== Inspect the Instrumentation CR
+
+OpenTelemetry auto-instrumentation is configured through an `Instrumentation` custom resource. Retrieve it:
+
+[source,role="execute"]
+----
+oc get instrumentation -n {tutorial_namespace} -o yaml
+----
+
+The `Instrumentation` CR tells the OpenTelemetry Operator how to inject language-specific agents into application pods. Each deployment opts in via an annotation on its pod template:
+
+* `instrumentation.opentelemetry.io/inject-python: "true"` -- *backend1* (Python)
+
+* `instrumentation.opentelemetry.io/inject-nodejs: "true"` -- *frontend* (Node.js)
+
+* `instrumentation.opentelemetry.io/inject-java: "true"` -- *backend2* (Java)
+
+* *backend3* (Go) uses *manual SDK instrumentation* because the Go auto-instrumentation support in the Operator is still maturing. The Go binary is compiled with the OpenTelemetry Go SDK and exports telemetry directly.
+
+When a pod with an injection annotation starts, the Operator's mutating webhook adds an init container that copies the language agent into a shared volume. The agent intercepts outgoing and incoming calls to produce traces and logs automatically -- no application code changes required.
+
+=== Check the Base OTel Collector
+
+The application-level Collector receives OTLP telemetry from all four services and routes it to the observability backends:
+
+[source,role="execute"]
+----
+oc get opentelemetrycollector -n {tutorial_namespace} -o yaml
+----
+
+The base Collector configuration defines:
+
+* *Receivers* -- OTLP over gRPC (port 4317) and HTTP (port 4318).
+
+* *Processors* -- `memory_limiter` and `batch` for safe throughput management.
+
+* *Exporters* -- `otlphttp/tempo` forwards traces to *TempoStack*, `otlphttp/loki` forwards logs to *LokiStack*, and `debug` prints a summary to stdout.
+
+* *Pipelines* -- separate pipelines for traces, logs, and metrics.
+
+In short: every span and log record flows from the application, through auto-instrumentation, into this Collector, and out to the respective backend.
+
+== Exercise 2: Verify Telemetry Flow
+
+Before profiling, confirm that telemetry data is actually arriving in the backends.
+
+=== View Traces
+
+. Open the OpenShift Console at `{console_url}`.
+
+. Navigate to *Observe -> Traces* in the left menu.
+
+. In the service dropdown, search for services from the dice game (for example `frontend` or `backend1`).
+
+. Select a trace to see its full span waterfall -- you should see calls from the frontend fanning out to the backend services.
+
+image::traces-view-placeholder.png[Trace waterfall showing frontend calling backend services,link=self,window=blank,width=700,title="Trace waterfall from the dice game application"]
+
+=== View Logs
+
+. In the OpenShift Console, navigate to *Observe -> Logs*.
+
+. Filter by namespace: `{tutorial_namespace}`.
+
+. You should see log entries from all four services. Notice that *backend3* produces a large volume of debug-level logs and *backend2* emits warning messages.
+
+=== Understand the Data Flow
+
+The complete telemetry path is:
+
+----
+Application Pod
+  -> OTel auto-instrumentation (sidecar init container)
+    -> OTel Collector (OTLP receiver)
+      -> TempoStack (traces)
+      -> LokiStack (logs)
+      -> User Workload Monitoring (metrics)
+----
+
+At this point everything is flowing, but you have no visibility into *how much* data each service contributes, or whether any of it is noise. That is what the next exercise addresses.
+
+== Exercise 3: Profile Telemetry with the Count Connector
+
+=== Why Profile?
+
+Before you can optimize telemetry, you need to understand what is flowing through the system. The OpenTelemetry *count connector* is a component that sits between pipelines and generates *metrics about your telemetry itself*. It counts spans and log records that match specific conditions, giving you a quantitative profile of your data.
+
+=== Apply the Profiling Collector Configuration
+
+Apply the updated Collector configuration that adds the count connector and filter processors. Paste the following into your terminal:
+
+[source,role="execute"]
+----
+oc apply -f - <<'EOF'
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-collector
+  namespace: tutorial-application
+spec:
+  mode: deployment
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    connectors:
+      count:
+        spans:
+          telemetry.spans.count:
+            description: "Total number of spans"
+            conditions:
+              - 'attributes["http.route"] != "/health"'
+            attributes:
+              - key: service.name
+                default_value: unknown
+              - key: k8s.namespace.name
+                default_value: unknown
+          telemetry.spans.high_cardinality.count:
+            description: "Spans with more than 10 attributes"
+            conditions:
+              - 'Len(attributes) > 10'
+            attributes:
+              - key: service.name
+                default_value: unknown
+          telemetry.spans.health.count:
+            description: "Health check spans"
+            conditions:
+              - 'attributes["http.route"] == "/health"'
+            attributes:
+              - key: service.name
+                default_value: unknown
+        logs:
+          telemetry.logs.count:
+            description: "Total number of logs"
+            attributes:
+              - key: service.name
+                default_value: unknown
+              - key: k8s.namespace.name
+                default_value: unknown
+          telemetry.logs.debug.count:
+            description: "Debug-level logs"
+            conditions:
+              - 'severity_number < 9'
+            attributes:
+              - key: service.name
+                default_value: unknown
+          telemetry.logs.large.count:
+            description: "Log bodies larger than 1000 bytes"
+            conditions:
+              - 'Len(body) > 1000'
+            attributes:
+              - key: service.name
+                default_value: unknown
+
+    processors:
+      batch:
+        send_batch_size: 10000
+        timeout: 10s
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 4000
+        spike_limit_mib: 800
+      filter/drop-debug-logs:
+        error_mode: ignore
+        logs:
+          log_record:
+            - 'severity_number < 9'
+      filter/drop-large-logs:
+        error_mode: ignore
+        logs:
+          log_record:
+            - 'Len(body) > 1000'
+      filter/drop-health-spans:
+        error_mode: ignore
+        traces:
+          span:
+            - 'attributes["http.route"] == "/health"'
+
+    exporters:
+      otlphttp/tempo:
+        endpoint: "https://tempo-simplest-gateway.tempo-observability.svc:8090/api/traces/v1/dev"
+        tls:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+        headers:
+          Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
+      otlphttp/loki:
+        endpoint: "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+        tls:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+        headers:
+          Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
+      prometheus:
+        endpoint: 0.0.0.0:8889
+      debug:
+        verbosity: basic
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, filter/drop-health-spans, batch]
+          exporters: [otlphttp/tempo, count, debug]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, filter/drop-debug-logs, filter/drop-large-logs, batch]
+          exporters: [otlphttp/loki, count, debug]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [debug]
+        metrics/count:
+          receivers: [count]
+          exporters: [prometheus]
+EOF
+----
+
+=== What Changed?
+
+The updated configuration adds three key components to the Collector pipeline:
+
+*Count connector* -- counts telemetry records that match OTTL (OpenTelemetry Transformation Language) conditions:
+
+* `telemetry.spans.count` -- total spans per service (excluding health checks).
+
+* `telemetry.spans.high_cardinality.count` -- spans with more than 10 attributes, a sign of attribute explosion.
+
+* `telemetry.spans.health.count` -- health-check spans hitting the `/health` route.
+
+* `telemetry.logs.count` -- total logs per service.
+
+* `telemetry.logs.debug.count` -- logs with severity below INFO (severity_number < 9).
+
+* `telemetry.logs.large.count` -- log records with body exceeding 1000 bytes.
+
+*Filter processors* -- drop telemetry that wastes storage:
+
+* `filter/drop-debug-logs` -- drops log records below INFO severity.
+
+* `filter/drop-large-logs` -- drops log records with body exceeding 1000 bytes.
+
+* `filter/drop-health-spans` -- drops spans from `/health` endpoints.
+
+*Prometheus exporter* -- exposes count metrics on port 8889 so you can query them from the OpenShift Console.
+
+The count connector acts as both an *exporter* (in the traces and logs pipelines) and a *receiver* (in the `metrics/count` pipeline), bridging telemetry data into metrics.
+
+=== Wait for the Collector to Restart
+
+The OpenTelemetry Operator will reconcile the updated CR and restart the Collector deployment. Wait for the rollout to complete:
+
+[source,role="execute"]
+----
+oc rollout status deployment/{collector_name} -n {tutorial_namespace}
+----
+
+You should see:
+
+----
+deployment "otel-collector" successfully rolled out
+----
+
+== Exercise 4: Analyze Profiling Results
+
+With the count connector active, the Collector is now generating metrics about telemetry volume. The COO MonitoringStack scrapes these metrics via the Prometheus exporter, making them available in the OpenShift Console.
+
+=== Query Count Metrics
+
+. In the OpenShift Console, navigate to *Observe -> Metrics*.
+
+. Enter the following PromQL queries one at a time to understand the telemetry profile.
+
+*Total span rate per service:*
+
+[source,role="execute"]
+----
+telemetry_spans_count
+----
+
+This shows how many non-health-check spans each service generates. Compare the rates across `frontend`, `backend1`, `backend2`, and `backend3`.
+
+*Health check spans being filtered:*
+
+[source,role="execute"]
+----
+telemetry_spans_health_count
+----
+
+These spans come from readiness and liveness probes. They are legitimate for Kubernetes but add no observability value -- the filter processor is already dropping them before they reach TempoStack.
+
+*Debug logs being filtered:*
+
+[source,role="execute"]
+----
+telemetry_logs_debug_count
+----
+
+This metric reveals how many debug-level logs each service produces. You will likely see *backend3* dominating this count due to its verbose Go logging configuration.
+
+*Oversized logs being filtered:*
+
+[source,role="execute"]
+----
+telemetry_logs_large_count
+----
+
+Log records larger than 1000 bytes are often stack traces or serialized objects that inflate storage costs. The filter processor drops these before they reach LokiStack.
+
+image::profiling-metrics-placeholder.png[Prometheus metrics showing telemetry counts per service,link=self,window=blank,width=700,title="Count connector metrics in the OpenShift Console"]
+
+=== Interpret the Results
+
+The profiling reveals several patterns:
+
+* *backend3* generates a disproportionate volume of debug-level logs. Without filtering, these would consume significant LokiStack storage for data that is rarely consulted in production.
+
+* *Health-check spans* from all four services are a constant stream of low-value telemetry. The `/health` route is called every few seconds by Kubernetes probes, producing spans that clutter trace searches.
+
+* *High-cardinality spans* (if present) indicate services adding too many attributes, which inflates storage and slows queries in TempoStack.
+
+* The *filter processors already applied* in this configuration are actively dropping the noise. In the next modules, you will add tail-based sampling and deduplication to further refine what gets stored.
+
+== Learning Outcomes
+
+By completing this module you have learned to:
+
+* Understand how OpenTelemetry auto-instrumentation works on OpenShift -- language-specific agents are injected via the `Instrumentation` CR and mutating webhook annotations.
+
+* Use the *count connector* to profile telemetry volume by service and condition, generating metrics about your observability data itself.
+
+* Identify and filter telemetry waste using *OTTL conditions* -- matching on severity level, attribute values, route names, and body size.
+
+* Reduce noise from debug logs, health-check spans, and oversized log entries using *filter processors* in the Collector pipeline.

@@ -1,0 +1,32 @@
+include::partial$_attributes.adoc[]
+
+= Lab Overview
+
+== The Problem
+
+ACME Corp runs a polyglot microservices platform on OpenShift. Observability costs are growing *40% quarter-over-quarter* due to unoptimized telemetry -- debug logs nobody reads, health-check spans consuming storage, and high-cardinality attributes inflating metrics. The platform needs observability that scales without burning budget.
+
+== The Solution
+
+In this lab you will use OpenTelemetry's data processing capabilities to *profile, filter, sample, and deduplicate* telemetry at the Collector level -- reducing cost and noise without losing visibility into errors and performance anomalies.
+
+== Architecture
+
+The lab environment runs a polyglot *dice game* application composed of four services:
+
+* *Node.js frontend* -- serves the UI and calls backend roll endpoints.
+* *Python backend* -- dice roll service.
+* *Java backend* -- dice roll service.
+* *Go backend* -- dice roll service.
+
+Each service is instrumented with OpenTelemetry and sends telemetry through an *OTel Collector* that routes data to three backends:
+
+* *TempoStack* -- distributed traces.
+* *LokiStack* -- aggregated logs.
+* *User Workload Monitoring (Prometheus)* -- metrics.
+
+image::architecture-overview.png[Lab architecture showing dice game app with OTel Collector forwarding to TempoStack, LokiStack, and Prometheus,link=self,window=blank,width=700,title="Lab Architecture"]
+
+== Pre-deployed Infrastructure
+
+All infrastructure -- operators, observability backends, and GitOps configuration -- is *pre-deployed via ArgoCD*. You will focus exclusively on application instrumentation and Collector pipeline tuning; no operator installation is required.

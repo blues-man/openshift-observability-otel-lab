@@ -1,0 +1,207 @@
+{{- if .Values.operators.enabled }}
+# ============================================================
+# OpenTelemetry Operator
+# ============================================================
+{{- if .Values.operators.opentelemetry.enabled }}
+{{- $existing := lookup "operators.coreos.com/v1alpha1" "Subscription" .Values.operators.opentelemetry.namespace .Values.operators.opentelemetry.name }}
+{{- if not $existing.metadata }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.operators.opentelemetry.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+  labels:
+    demo.redhat.com/application: "observability-lab"
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: {{ .Values.operators.opentelemetry.namespace }}-og
+  namespace: {{ .Values.operators.opentelemetry.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  targetNamespaces:
+    - {{ .Values.operators.opentelemetry.namespace }}
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: {{ .Values.operators.opentelemetry.name }}
+  namespace: {{ .Values.operators.opentelemetry.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  labels:
+    demo.redhat.com/application: "observability-lab"
+spec:
+  channel: {{ .Values.operators.opentelemetry.channel }}
+  installPlanApproval: {{ .Values.operators.opentelemetry.installPlanApproval }}
+  name: {{ .Values.operators.opentelemetry.name }}
+  source: {{ .Values.operators.opentelemetry.source }}
+  sourceNamespace: {{ .Values.operators.opentelemetry.sourceNamespace }}
+{{- end }}
+{{- end }}
+
+# ============================================================
+# Tempo Operator
+# ============================================================
+{{- if .Values.operators.tempo.enabled }}
+{{- $existing := lookup "operators.coreos.com/v1alpha1" "Subscription" .Values.operators.tempo.namespace .Values.operators.tempo.name }}
+{{- if not $existing.metadata }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.operators.tempo.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+  labels:
+    demo.redhat.com/application: "observability-lab"
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: {{ .Values.operators.tempo.namespace }}-og
+  namespace: {{ .Values.operators.tempo.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  targetNamespaces:
+    - {{ .Values.operators.tempo.namespace }}
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: {{ .Values.operators.tempo.name }}
+  namespace: {{ .Values.operators.tempo.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  labels:
+    demo.redhat.com/application: "observability-lab"
+spec:
+  channel: {{ .Values.operators.tempo.channel }}
+  installPlanApproval: {{ .Values.operators.tempo.installPlanApproval }}
+  name: {{ .Values.operators.tempo.name }}
+  source: {{ .Values.operators.tempo.source }}
+  sourceNamespace: {{ .Values.operators.tempo.sourceNamespace }}
+{{- end }}
+{{- end }}
+
+# ============================================================
+# Loki Operator (global namespace — AllNamespaces install mode)
+# ============================================================
+{{- if .Values.operators.loki.enabled }}
+{{- $existing := lookup "operators.coreos.com/v1alpha1" "Subscription" .Values.operators.loki.namespace .Values.operators.loki.name }}
+{{- if not $existing.metadata }}
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: {{ .Values.operators.loki.name }}
+  namespace: {{ .Values.operators.loki.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  labels:
+    demo.redhat.com/application: "observability-lab"
+spec:
+  channel: {{ .Values.operators.loki.channel }}
+  installPlanApproval: {{ .Values.operators.loki.installPlanApproval }}
+  name: {{ .Values.operators.loki.name }}
+  source: {{ .Values.operators.loki.source }}
+  sourceNamespace: {{ .Values.operators.loki.sourceNamespace }}
+{{- end }}
+{{- end }}
+
+# ============================================================
+# Cluster Observability Operator
+# ============================================================
+{{- if .Values.operators.clusterObservability.enabled }}
+{{- $existing := lookup "operators.coreos.com/v1alpha1" "Subscription" .Values.operators.clusterObservability.namespace .Values.operators.clusterObservability.name }}
+{{- if not $existing.metadata }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.operators.clusterObservability.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+  labels:
+    demo.redhat.com/application: "observability-lab"
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: {{ .Values.operators.clusterObservability.namespace }}-og
+  namespace: {{ .Values.operators.clusterObservability.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  targetNamespaces:
+    - {{ .Values.operators.clusterObservability.namespace }}
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: {{ .Values.operators.clusterObservability.name }}
+  namespace: {{ .Values.operators.clusterObservability.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  labels:
+    demo.redhat.com/application: "observability-lab"
+spec:
+  channel: {{ .Values.operators.clusterObservability.channel }}
+  installPlanApproval: {{ .Values.operators.clusterObservability.installPlanApproval }}
+  name: {{ .Values.operators.clusterObservability.name }}
+  source: {{ .Values.operators.clusterObservability.source }}
+  sourceNamespace: {{ .Values.operators.clusterObservability.sourceNamespace }}
+{{- end }}
+{{- end }}
+
+# ============================================================
+# Cluster Logging Operator
+# ============================================================
+{{- if .Values.operators.clusterLogging.enabled }}
+{{- $existing := lookup "operators.coreos.com/v1alpha1" "Subscription" .Values.operators.clusterLogging.namespace .Values.operators.clusterLogging.name }}
+{{- if not $existing.metadata }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.operators.clusterLogging.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+  labels:
+    demo.redhat.com/application: "observability-lab"
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: {{ .Values.operators.clusterLogging.namespace }}-og
+  namespace: {{ .Values.operators.clusterLogging.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  targetNamespaces:
+    - {{ .Values.operators.clusterLogging.namespace }}
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: {{ .Values.operators.clusterLogging.name }}
+  namespace: {{ .Values.operators.clusterLogging.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  labels:
+    demo.redhat.com/application: "observability-lab"
+spec:
+  channel: {{ .Values.operators.clusterLogging.channel }}
+  installPlanApproval: {{ .Values.operators.clusterLogging.installPlanApproval }}
+  name: {{ .Values.operators.clusterLogging.name }}
+  source: {{ .Values.operators.clusterLogging.source }}
+  sourceNamespace: {{ .Values.operators.clusterLogging.sourceNamespace }}
+{{- end }}
+{{- end }}
+
+{{- end }}

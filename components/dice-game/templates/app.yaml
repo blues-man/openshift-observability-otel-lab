@@ -1,0 +1,180 @@
+{{- if .Values.app.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: {{ .Values.app.namespace }}
+  labels:
+    app: frontend
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  replicas: {{ .Values.app.frontend.replicas }}
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+      annotations:
+        instrumentation.opentelemetry.io/inject-nodejs: "true"
+    spec:
+      containers:
+        - name: frontend
+          image: {{ .Values.app.frontend.image }}
+          ports:
+            - containerPort: 4000
+          env:
+            - name: DICE_ROLLER1_URL
+              value: "http://backend1:5000/rolldice"
+            - name: DICE_ROLLER2_URL
+              value: "http://backend2:5165/rolldice"
+            - name: DICE_ROLLER3_URL
+              value: "http://backend3:5165/rolldice"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: {{ .Values.app.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 4000
+      targetPort: 4000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend1
+  namespace: {{ .Values.app.namespace }}
+  labels:
+    app: backend1
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  replicas: {{ .Values.app.backend1.replicas }}
+  selector:
+    matchLabels:
+      app: backend1
+  template:
+    metadata:
+      labels:
+        app: backend1
+      annotations:
+        instrumentation.opentelemetry.io/inject-python: "true"
+    spec:
+      containers:
+        - name: backend1
+          image: {{ .Values.app.backend1.image }}
+          ports:
+            - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend1
+  namespace: {{ .Values.app.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  selector:
+    app: backend1
+  ports:
+    - port: 5000
+      targetPort: 5000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend2
+  namespace: {{ .Values.app.namespace }}
+  labels:
+    app: backend2
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  replicas: {{ .Values.app.backend2.replicas }}
+  selector:
+    matchLabels:
+      app: backend2
+  template:
+    metadata:
+      labels:
+        app: backend2
+      annotations:
+        instrumentation.opentelemetry.io/inject-java: "true"
+    spec:
+      containers:
+        - name: backend2
+          image: {{ .Values.app.backend2.image }}
+          ports:
+            - containerPort: 5165
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend2
+  namespace: {{ .Values.app.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  selector:
+    app: backend2
+  ports:
+    - port: 5165
+      targetPort: 5165
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend3
+  namespace: {{ .Values.app.namespace }}
+  labels:
+    app: backend3
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  replicas: {{ .Values.app.backend3.replicas }}
+  selector:
+    matchLabels:
+      app: backend3
+  template:
+    metadata:
+      labels:
+        app: backend3
+    spec:
+      containers:
+        - name: backend3
+          image: {{ .Values.app.backend3.image }}
+          ports:
+            - containerPort: 5165
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector.{{ .Values.app.namespace }}.svc:4317"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name=backend3"
+            - name: RATE_ERROR
+              value: "5"
+            - name: RATE_HIGH_DELAY
+              value: "5"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend3
+  namespace: {{ .Values.app.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  selector:
+    app: backend3
+  ports:
+    - port: 5165
+      targetPort: 5165
+{{- end }}

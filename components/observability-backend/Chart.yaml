@@ -1,0 +1,5 @@
+apiVersion: v2
+name: observability-backend
+description: Observability backend stack for OpenShift 4.22 lab — MinIO, TempoStack, LokiStack, ClusterLogForwarder, UWM, COO MonitoringStack, UIPlugins
+type: application
+version: 0.1.0

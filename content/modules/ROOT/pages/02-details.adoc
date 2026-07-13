@@ -1,0 +1,70 @@
+include::partial$_attributes.adoc[]
+
+= Environment Details
+
+== Access Information
+
+[cols="1,2",options="header"]
+|===
+| Resource | Value
+
+| OpenShift Console
+| {console_url}
+
+| API URL
+| {api_url}
+
+| Username
+| {user}
+
+| Password
+| {password}
+|===
+
+== Pre-installed Operators
+
+All operators are installed from the *redhat-operators* catalog source.
+
+[cols="1,1",options="header"]
+|===
+| Operator | Catalog
+
+| OpenTelemetry Operator
+| redhat-operators
+
+| Tempo Operator
+| redhat-operators
+
+| Loki Operator
+| redhat-operators
+
+| Cluster Observability Operator
+| redhat-operators
+
+| Cluster Logging Operator
+| redhat-operators
+|===
+
+== Pre-deployed Backends
+
+[cols="1,1",options="header"]
+|===
+| Backend | Namespace
+
+| TempoStack
+| `tempo-observability`
+
+| LokiStack
+| `openshift-logging`
+
+| COO MonitoringStack
+| `coo-observability`
+|===
+
+== Application Namespace
+
+The dice game application runs in the `tutorial-application` namespace. All lab exercises deploy workloads into this namespace.
+
+== Terminal Access
+
+The lab terminal is embedded directly in the Showroom interface. Click the *Terminal* tab in the panel to open a pre-authenticated shell connected to the lab cluster.

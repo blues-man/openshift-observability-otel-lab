@@ -1,0 +1,23 @@
+backend:
+  enabled: true
+  tempo:
+    namespace: tempo-observability
+    storageSize: 1Gi
+    minio:
+      accessKey: tempo
+      secretKey: supersecret
+      storageSize: 5Gi
+  loki:
+    namespace: openshift-logging
+    storageSize: 1Gi
+    minio:
+      accessKey: loki
+      secretKey: supersecret
+      storageSize: 5Gi
+  coo:
+    namespace: coo-observability
+    retentionDays: 7
+  uwm:
+    enabled: true
+deployer:
+  domain: ""

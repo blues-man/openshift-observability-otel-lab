@@ -1,0 +1,99 @@
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-collector
+  namespace: tutorial-application
+spec:
+  mode: deployment
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    connectors:
+      count:
+        spans:
+          telemetry.spans.count:
+            description: "Total number of spans"
+            attributes:
+              - key: service.name
+                default_value: unknown
+
+    processors:
+      batch:
+        send_batch_size: 10000
+        timeout: 10s
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 4000
+        spike_limit_mib: 800
+      tail_sampling:
+        decision_wait: 10s
+        num_traces: 50000
+        policies:
+          - name: keep-errors
+            type: status_code
+            status_code:
+              status_codes:
+                - ERROR
+          - name: keep-slow
+            type: latency
+            latency:
+              threshold_ms: 2000
+          - name: drop-health
+            type: and
+            and:
+              and_sub_policy:
+                - name: health-route
+                  type: string_attribute
+                  string_attribute:
+                    key: http.route
+                    values: ["/health"]
+                - name: drop-policy
+                  type: probabilistic
+                  probabilistic:
+                    sampling_percentage: 0
+          - name: sample-rest
+            type: probabilistic
+            probabilistic:
+              sampling_percentage: 20
+
+    exporters:
+      otlphttp/tempo:
+        endpoint: "https://tempo-simplest-gateway.tempo-observability.svc:8090/api/traces/v1/dev"
+        tls:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+        headers:
+          Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
+      otlphttp/loki:
+        endpoint: "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+        tls:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+        headers:
+          Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
+      prometheus:
+        endpoint: 0.0.0.0:8889
+      debug:
+        verbosity: basic
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, tail_sampling, batch]
+          exporters: [otlphttp/tempo, count, debug]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp/loki, debug]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [debug]
+        metrics/count:
+          receivers: [count]
+          exporters: [prometheus]

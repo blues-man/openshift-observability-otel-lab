@@ -1,0 +1,44 @@
+include::partial$_attributes.adoc[]
+
+= Full-Stack Observability on OpenShift with OpenTelemetry
+
+A hands-on guide to strategic sampling and data optimization.
+
+Based on the KubeCon EU 2026 workshop by Pavol Loffay (Red Hat).
+
+[cols="1h,3"]
+|===
+| Duration | ~90 minutes
+| Audience | Intermediate developers and SREs familiar with OpenShift basics
+|===
+
+== Overview
+
+In this workshop you will deploy OpenShift's native observability stack and learn practical techniques for controlling telemetry volume without losing visibility.
+
+== What you will learn
+
+* Deploy the platform observability stack -- Tempo, Loki, and the Cluster Observability Operator (COO)
+* Profile telemetry data to understand baseline volume and cost
+* Implement head-based sampling to reduce trace ingestion at the source
+* Implement tail-based sampling to keep only the traces that matter
+* Reduce log volume with deduplication
+
+== Prerequisites
+
+* Access to an OpenShift {ocp_version} cluster (provided)
+* Basic Kubernetes and OpenShift knowledge
+* Familiarity with observability concepts (traces, metrics, logs)
+
+== Modules
+
+[cols="1,4,1",options="header"]
+|===
+| # | Module | Duration
+
+| 1 | xref:03-module-01-deploy-observability-stack.adoc[Deploy the Observability Stack] | ~20 min
+| 2 | xref:04-module-02-deploy-app-and-profile.adoc[Deploy the App and Profile Telemetry] | ~20 min
+| 3 | xref:05-module-03-head-based-sampling.adoc[Head-Based Sampling] | ~15 min
+| 4 | xref:06-module-04-tail-based-sampling.adoc[Tail-Based Sampling] | ~20 min
+| 5 | xref:07-module-05-log-dedup-and-wrapup.adoc[Log Deduplication and Wrap-Up] | ~15 min
+|===

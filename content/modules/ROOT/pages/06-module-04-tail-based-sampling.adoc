@@ -1,0 +1,333 @@
+include::partial$_attributes.adoc[]
+
+= Module 4: Tail-Based Sampling
+
+[cols="1h,3"]
+|===
+| Duration | ~20 minutes
+| Objective | Configure tail-based sampling policies that keep error and slow traces while dropping noise, and understand how to scale this approach for production
+|===
+
+Head-based sampling makes its keep-or-drop decision at the very start of a trace -- before any useful information exists.
+Tail-based sampling flips this: the collector buffers incoming spans, groups them by trace ID, waits for a configurable window, and _then_ evaluates policies against the complete trace.
+This means the collector can make informed decisions -- keep every error, keep every slow request, drop health checks -- but the trade-off is higher memory usage because all in-flight traces must be held in memory during the decision window.
+
+== Exercise 1: Understand Tail-Based Sampling
+
+Before applying any configuration, take a moment to understand how the tail sampling processor works inside the OpenTelemetry Collector.
+
+=== How it works
+
+. The collector receives spans from instrumented applications over OTLP.
+
+. Incoming spans are grouped by their *trace ID* and buffered in memory.
+
+. After `decision_wait` seconds (10s in this lab), the processor evaluates each buffered trace against an ordered list of *policies*.
+
+. The first matching policy determines whether the trace is *sampled* (kept) or *not sampled* (dropped).
+
+. Sampled traces are forwarded to the export pipeline; dropped traces are discarded.
+
+=== Trade-offs
+
+* *Smarter decisions* -- the collector sees the full picture: status codes, latency, attributes.
+You can keep 100% of error traces and slow traces while aggressively sampling healthy traffic.
+
+* *Higher memory usage* -- every in-flight trace must be buffered.
+The rough sizing formula is:
++
+----
+traces_in_memory = incoming_traces_per_second x decision_wait_seconds
+----
++
+For this lab: if the application generates roughly 50 traces/sec and `decision_wait` is 10s, the collector buffers up to ~500 traces at any given time.
+
+* *Single-collector requirement* -- all spans belonging to a single trace must arrive at the *same* collector instance.
+If spans scatter across replicas, the processor sees incomplete traces and makes bad decisions.
+Exercise 4 covers how to solve this at scale.
+
+== Exercise 2: Apply Tail Sampling Policies
+
+In this exercise you will replace the current collector configuration with one that uses the `tail_sampling` processor.
+Four policies implement a practical sampling strategy:
+
+* *keep-errors* -- keep every trace that contains an ERROR status code.
+
+* *keep-slow* -- keep every trace with end-to-end latency above 2000 ms.
+
+* *drop-health* -- drop health-check traces (`/health` route) entirely.
+
+* *sample-rest* -- keep 20% of all remaining traces.
+
+=== Step 1 -- Apply the tail sampling collector configuration
+
+[source,role="execute"]
+----
+oc apply -f - <<'EOF'
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-collector
+  namespace: tutorial-application
+spec:
+  mode: deployment
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    connectors:
+      count:
+        spans:
+          telemetry.spans.count:
+            description: "Total number of spans"
+            attributes:
+              - key: service.name
+                default_value: unknown
+
+    processors:
+      batch:
+        send_batch_size: 10000
+        timeout: 10s
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 4000
+        spike_limit_mib: 800
+      tail_sampling:
+        decision_wait: 10s
+        num_traces: 50000
+        policies:
+          - name: keep-errors
+            type: status_code
+            status_code:
+              status_codes:
+                - ERROR
+          - name: keep-slow
+            type: latency
+            latency:
+              threshold_ms: 2000
+          - name: drop-health
+            type: and
+            and:
+              and_sub_policy:
+                - name: health-route
+                  type: string_attribute
+                  string_attribute:
+                    key: http.route
+                    values: ["/health"]
+                - name: drop-policy
+                  type: probabilistic
+                  probabilistic:
+                    sampling_percentage: 0
+          - name: sample-rest
+            type: probabilistic
+            probabilistic:
+              sampling_percentage: 20
+
+    exporters:
+      otlphttp/tempo:
+        endpoint: "https://tempo-simplest-gateway.tempo-observability.svc:8090/api/traces/v1/dev"
+        tls:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+        headers:
+          Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
+      otlphttp/loki:
+        endpoint: "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+        tls:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+        headers:
+          Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
+      prometheus:
+        endpoint: 0.0.0.0:8889
+      debug:
+        verbosity: basic
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, tail_sampling, batch]
+          exporters: [otlphttp/tempo, count, debug]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp/loki, debug]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [debug]
+        metrics/count:
+          receivers: [count]
+          exporters: [prometheus]
+EOF
+----
+
+Notice the key differences from the previous collector configuration:
+
+* The `tail_sampling` processor replaces any head-based sampling.
+
+* The traces pipeline runs `memory_limiter -> tail_sampling -> batch` -- the tail sampling processor must come *before* batch so it can evaluate complete traces.
+
+* `decision_wait: 10s` means traces are buffered for 10 seconds before a sampling decision is made.
+
+* `num_traces: 50000` sets the maximum number of traces held in memory simultaneously.
+
+=== Step 2 -- Wait for the collector to restart
+
+[source,role="execute"]
+----
+oc rollout status deployment/otel-collector -n {tutorial_namespace}
+----
+
+----
+deployment "otel-collector" successfully rolled out
+----
+
+=== Step 3 -- Review the policies
+
+Take a closer look at what each policy does:
+
+[cols="1,1,3"]
+|===
+| Policy | Type | Behavior
+
+| `keep-errors`
+| `status_code`
+| Keeps any trace containing a span with status code ERROR. Critical for debugging.
+
+| `keep-slow`
+| `latency`
+| Keeps any trace with total duration above 2000 ms. Catches performance regressions.
+
+| `drop-health`
+| `and` (composite)
+| Matches spans where `http.route = /health` AND applies 0% probabilistic sampling -- effectively dropping all health-check traces.
+
+| `sample-rest`
+| `probabilistic`
+| Keeps 20% of all remaining traces that did not match any previous policy.
+|===
+
+Policies are evaluated in order.
+The first match wins -- once a trace matches `keep-errors`, it is kept regardless of what later policies would decide.
+
+== Exercise 3: Verify Tail Sampling in Action
+
+Give the application a minute to generate fresh traces under the new sampling configuration, then verify the results.
+
+=== Step 1 -- Browse traces in the console
+
+Open the OpenShift Console and navigate to *Observe -> Traces*.
+
+Search for traces from your application services.
+Compare what you see now with the unsampled or head-sampled trace volume from earlier modules:
+
+* Health-check traces (`/health`) should be *absent* -- the `drop-health` policy eliminates them entirely.
+
+* Any traces containing errors should be *present* -- the `keep-errors` policy retains all of them.
+
+* Slow traces (latency > 2 seconds) should be *present* -- the `keep-slow` policy retains them.
+
+* Normal, healthy traces should appear in *reduced volume* -- only about 20% are retained by the `sample-rest` policy.
+
+image::tail-sampling-traces-filtered-placeholder.png[Traces view showing tail-sampled results with errors preserved and health checks removed,link=self,window=blank]
+
+=== Step 2 -- Check tail sampling metrics
+
+The tail sampling processor exposes internal metrics about its decisions.
+Query them from the collector:
+
+[source,role="execute"]
+----
+oc exec -n {tutorial_namespace} deployment/otel-collector -- curl -s localhost:8888/metrics | grep tail_sampling
+----
+
+Key metrics to look for in the output:
+
+* `otelcol_processor_tail_sampling_global_count_traces_sampled_total` -- the total number of traces that were sampled (kept) versus not sampled (dropped).
+
+* `otelcol_processor_tail_sampling_policy_evaluation_errors_total` -- should be zero; indicates policy misconfiguration if non-zero.
+
+* `otelcol_processor_tail_sampling_count_traces_on_policies_evaluated` -- per-policy breakdown showing which policies matched and their decisions.
+
+----
+# HELP otelcol_processor_tail_sampling_global_count_traces_sampled_total
+# TYPE otelcol_processor_tail_sampling_global_count_traces_sampled_total counter
+otelcol_processor_tail_sampling_global_count_traces_sampled_total{sampled="true"} ...
+otelcol_processor_tail_sampling_global_count_traces_sampled_total{sampled="false"} ...
+----
+
+[TIP]
+====
+If the `sampled=false` count is significantly higher than `sampled=true`, the policies are working as expected -- most healthy, fast traces are being dropped in favor of keeping only the interesting ones.
+====
+
+== Exercise 4: Understand Scalable Tail Sampling (Theory)
+
+The single-replica collector in this lab works well for learning, but production environments need to handle higher throughput with multiple collector replicas.
+This creates a fundamental problem for tail-based sampling.
+
+=== The problem: span scattering
+
+When you scale the collector to multiple replicas behind a Kubernetes Service, incoming spans are load-balanced across replicas using round-robin.
+Spans from the *same trace* may land on *different* collector instances.
+Each instance sees only a partial trace, leading to incorrect sampling decisions -- an error span might arrive at replica A while the rest of the trace lands on replica B, causing both replicas to make decisions based on incomplete information.
+
+=== The solution: two-tier architecture
+
+The standard production pattern uses two layers of collectors:
+
+image::tail-sampling-two-tier-architecture-placeholder.png[Two-tier tail sampling architecture with load-balancing and sampling tiers,link=self,window=blank]
+
+*Tier 1 -- Load-Balancing Collectors*
+
+* Deployed as a DaemonSet or Deployment with a `loadbalancing` exporter.
+
+* The load-balancing exporter uses consistent hashing on the trace ID to route all spans from the same trace to the same Tier 2 instance.
+
+* It discovers Tier 2 endpoints via a headless Kubernetes Service using DNS resolution.
+
+*Tier 2 -- Tail-Sampling Collectors*
+
+* A StatefulSet of collector instances, each running the `tail_sampling` processor.
+
+* Fronted by a headless Service so that Tier 1 can discover individual pod IPs.
+
+* Because Tier 1 routes by trace ID, each Tier 2 instance receives *all* spans for the traces it handles.
+
+=== Span Metrics Connector
+
+One important pattern to combine with tail sampling is the *Span Metrics Connector*.
+This connector derives RED metrics (Rate, Error rate, Duration histograms) from 100% of spans _before_ the sampling decision is made.
+
+This means you can:
+
+* Build dashboards and alerts based on *all* traffic, not just the sampled subset.
+
+* Store only 20% of traces for detailed debugging while still having complete metrics coverage.
+
+The span metrics connector sits in the pipeline before the tail sampling processor, feeding derived metrics to the metrics pipeline while the original spans continue to the sampling decision.
+
+[NOTE]
+====
+The two-tier architecture and span metrics connector are production patterns.
+The single-replica lab setup you are using does not require this complexity, but understanding the architecture is essential before deploying tail sampling at scale.
+====
+
+== Learning Outcomes
+
+After completing this module you should be able to:
+
+* Explain the trade-offs of tail-based sampling -- smarter, error-aware decisions at the cost of higher memory usage and the single-collector constraint.
+
+* Configure tail sampling policies in the OpenTelemetry Collector to keep error traces, keep slow traces, drop noise, and probabilistically sample the rest.
+
+* Monitor tail sampling health using the collector's internal metrics (`otelcol_processor_tail_sampling_*`).
+
+* Describe the two-tier load-balancing architecture required to scale tail sampling across multiple collector replicas in production.
+
+* Understand how the Span Metrics Connector enables complete RED metrics coverage even when only a fraction of traces are stored.

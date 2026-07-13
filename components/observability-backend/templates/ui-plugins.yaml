@@ -1,0 +1,27 @@
+{{- if .Values.backend.enabled }}
+---
+apiVersion: observability.openshift.io/v1alpha1
+kind: UIPlugin
+metadata:
+  name: logging
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  type: Logging
+  logging:
+    lokiStack:
+      name: logging-loki
+---
+apiVersion: observability.openshift.io/v1alpha1
+kind: UIPlugin
+metadata:
+  name: distributed-tracing
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  type: DistributedTracing
+  distributedTracing:
+    tempoStack:
+      name: simplest
+      namespace: {{ .Values.backend.tempo.namespace }}
+{{- end }}

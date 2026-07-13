@@ -1,0 +1,145 @@
+# OpenShift Observability with OpenTelemetry Lab
+# App of Apps — deploys components as separate ArgoCD Applications
+
+# ============================================================
+# GitOps Configuration
+# ============================================================
+gitops:
+  repoUrl: ""
+  revision: "main"
+  basePath: "."
+
+argocd:
+  namespace: openshift-gitops
+  project: default
+
+# ============================================================
+# Components
+# ============================================================
+components:
+
+  # --- Operator Installation (OLM Subscriptions) ---
+  operators:
+    enabled: true
+    opentelemetry:
+      enabled: true
+      name: opentelemetry-product
+      namespace: openshift-opentelemetry-operator
+      channel: stable
+      source: redhat-operators
+      sourceNamespace: openshift-marketplace
+      installPlanApproval: Automatic
+    tempo:
+      enabled: true
+      name: tempo-product
+      namespace: openshift-tempo-operator
+      channel: stable
+      source: redhat-operators
+      sourceNamespace: openshift-marketplace
+      installPlanApproval: Automatic
+    loki:
+      enabled: true
+      name: loki-operator
+      namespace: openshift-operators-redhat
+      channel: stable-6.2
+      source: redhat-operators
+      sourceNamespace: openshift-marketplace
+      installPlanApproval: Automatic
+    clusterObservability:
+      enabled: true
+      name: cluster-observability-operator
+      namespace: openshift-cluster-observability-operator
+      channel: stable
+      source: redhat-operators
+      sourceNamespace: openshift-marketplace
+      installPlanApproval: Automatic
+    clusterLogging:
+      enabled: true
+      name: cluster-logging
+      namespace: openshift-logging
+      channel: stable-6.1
+      source: redhat-operators
+      sourceNamespace: openshift-marketplace
+      installPlanApproval: Automatic
+
+  # --- Observability Backend (Tempo, Loki, COO, MinIO) ---
+  observabilityBackend:
+    enabled: true
+    tempo:
+      namespace: tempo-observability
+      storageSize: 1Gi
+      minio:
+        accessKey: tempo
+        secretKey: supersecret
+        storageSize: 5Gi
+    loki:
+      namespace: openshift-logging
+      storageSize: 1Gi
+      minio:
+        accessKey: loki
+        secretKey: supersecret
+        storageSize: 5Gi
+    coo:
+      namespace: coo-observability
+      retentionDays: 7
+    uwm:
+      enabled: true
+
+  # --- Dice Game Application ---
+  diceGame:
+    enabled: true
+    namespace: tutorial-application
+    frontend:
+      image: ghcr.io/pavolloffay/kubecon-eu-2026-opentelemetry-observability-on-budget-frontend:latest
+      replicas: 1
+    backend1:
+      image: ghcr.io/pavolloffay/kubecon-eu-2026-opentelemetry-observability-on-budget-backend1:latest
+      replicas: 1
+    backend2:
+      image: ghcr.io/pavolloffay/kubecon-eu-2026-opentelemetry-observability-on-budget-backend2:latest
+      replicas: 1
+    backend3:
+      image: ghcr.io/pavolloffay/kubecon-eu-2026-opentelemetry-observability-on-budget-backend3:latest
+      replicas: 1
+    loadgen:
+      enabled: true
+      image: curlimages/curl:latest
+    collector:
+      image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.147.0
+    userInfo:
+      enabled: true
+      title: "OpenShift Observability with OpenTelemetry"
+
+  # --- Showroom Lab Guide ---
+  showroom:
+    enabled: true
+    namespace: showroom
+    name: showroom
+    content:
+      repoUrl: ""
+      repoRef: "main"
+      antoraPlaybook: "site.yml"
+      image: "quay.io/rhpds/showroom-content:v1.3.1"
+    nookbag:
+      enabled: false
+      bundleUrl: ""
+    terminal:
+      enabled: true
+      image: "quay.io/rhpds/openshift-showroom-terminal-ocp:latest"
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "512Mi"
+        limits:
+          cpu: "500m"
+          memory: "1Gi"
+
+# ============================================================
+# Values injected by field content workload (do not modify)
+# ============================================================
+deployer:
+  domain: ""
+  apiUrl: ""
+
+fieldContent:
+  deploymentType: "helm"

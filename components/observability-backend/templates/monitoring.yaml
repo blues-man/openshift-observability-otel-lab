@@ -1,0 +1,37 @@
+{{- if .Values.backend.enabled }}
+{{- if .Values.backend.uwm.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+data:
+  config.yaml: |
+    enableUserWorkload: true
+{{- end }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.backend.coo.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+---
+apiVersion: monitoring.rhobs/v1alpha1
+kind: MonitoringStack
+metadata:
+  name: coo-observability
+  namespace: {{ .Values.backend.coo.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  retention: {{ .Values.backend.coo.retentionDays }}d
+  resourceSelector:
+    matchLabels:
+      app: coo-observability
+  prometheusConfig:
+    enableOtlpHttpReceiver: true
+{{- end }}

@@ -1,0 +1,53 @@
+include::partial$_attributes.adoc[]
+
+= Conclusion
+
+Congratulations on completing the *{lab_title}* workshop!
+
+Over five hands-on modules you built a production-grade observability pipeline on OpenShift -- starting from a full-fidelity baseline and progressively applying optimization techniques that reduce cost and noise without sacrificing visibility into the signals that matter.
+
+== What You Accomplished
+
+* *Module 1* -- Explored the pre-deployed observability stack: OpenTelemetry Operator, TempoStack, LokiStack, Cluster Observability Operator, and the OpenShift Console integrations.
+
+* *Module 2* -- Deployed the dice game application, auto-instrumented it with OpenTelemetry, and profiled the baseline telemetry volume to understand cost drivers.
+
+* *Module 3* -- Configured head-based sampling at the SDK level via the `Instrumentation` CR and learned how SDK and collector sampling interact multiplicatively.
+
+* *Module 4* -- Implemented tail-based sampling to retain 100% of error and high-latency traces while aggressively sampling healthy traffic, and explored the scalable two-tier architecture for production.
+
+* *Module 5* -- Enabled log deduplication to aggregate repetitive log entries and reviewed a layered optimization strategy that combines all four techniques.
+
+== Key Takeaways
+
+* *OpenTelemetry on OpenShift is production-ready.* The Red Hat build of the OpenTelemetry Operator, combined with TempoStack, LokiStack, and the Cluster Observability Operator, provides a fully integrated and supported observability platform.
+
+* *Cost optimization happens at the Collector.* Filter processors, sampling strategies, and log deduplication are all configured in the OpenTelemetry Collector pipeline -- no application code changes required.
+
+* *Tail-based sampling preserves what matters.* By making sampling decisions after the trace completes, you keep every error and latency anomaly while reducing healthy-traffic volume by 80% or more.
+
+* *Layer your strategies.* No single technique covers every scenario. Combine filtering, head-based sampling, tail-based sampling, and log deduplication for maximum cost reduction with minimum observability loss.
+
+== What's Next
+
+Now that you have the foundational skills, here are areas to explore on your own:
+
+* *Explore the OpenTelemetry Collector contrib processors catalog.* The https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor[contrib repository] contains dozens of processors -- from attribute manipulation to metric aggregation -- that extend your pipeline capabilities.
+
+* *Set up alerting based on span metrics.* The span metrics connector generates RED metrics (Rate, Errors, Duration) directly from traces. Wire these into Prometheus alerting rules for trace-driven alerts without manual instrumentation.
+
+* *Implement the scalable two-tier tail sampling architecture for production.* Deploy a routing collector tier that groups spans by trace ID and forwards complete traces to a sampling tier. This pattern scales horizontally across large clusters.
+
+* *Investigate OpenShift's built-in monitoring stack integration with OTLP.* The COO MonitoringStack's OTLP HTTP receiver lets you push OpenTelemetry metrics directly to Prometheus -- explore how this simplifies metrics pipelines.
+
+== References
+
+* https://opentelemetry.io/docs/collector/[OpenTelemetry Collector Documentation]
+
+* https://docs.redhat.com/en/documentation/red_hat_build_of_opentelemetry/[Red Hat OpenShift Distributed Tracing Documentation]
+
+* https://docs.redhat.com/en/documentation/cluster_observability_operator/[Red Hat Cluster Observability Operator Documentation]
+
+* https://github.com/pavolloffay/kubecon-eu-2026-opentelemetry-observability-on-budget[Original KubeCon EU 2026 Workshop -- Observability on a Budget with OpenTelemetry]
+
+* https://github.com/pavolloffay/openshift-observability-manifests[OpenShift Observability Manifests Repository]

@@ -1,0 +1,27 @@
+site:
+  title: "OpenShift Observability with OpenTelemetry"
+  start_page: openshift-observability-otel-lab::index.adoc
+
+content:
+  sources:
+    - url: .
+      start_path: content
+      branches: HEAD
+
+asciidoc:
+  attributes:
+    experimental: ''
+    idprefix: ''
+    idseparator: '-'
+    source-highlighter: highlight.js
+
+ui:
+  bundle:
+    url: https://github.com/rhpds/rhdp_showroom_theme/releases/download/rh-one-2025/ui-bundle.zip
+    snapshot: true
+  supplemental_files:
+    - path: partials/header-content.hbs
+      contents: ''
+
+runtime:
+  fetch: true

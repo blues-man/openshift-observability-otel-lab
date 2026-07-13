@@ -1,0 +1,139 @@
+{{- if .Values.backend.enabled }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: loki-minio
+  namespace: {{ .Values.backend.loki.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+type: Opaque
+data:
+  accesskey: {{ .Values.backend.loki.minio.accessKey | b64enc }}
+  secretkey: {{ .Values.backend.loki.minio.secretKey | b64enc }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: loki-minio
+  namespace: {{ .Values.backend.loki.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.backend.loki.minio.storageSize }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki-minio
+  namespace: {{ .Values.backend.loki.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki-minio
+  template:
+    metadata:
+      labels:
+        app: loki-minio
+    spec:
+      containers:
+        - name: minio
+          image: minio/minio:latest
+          command:
+            - minio
+            - server
+            - /data
+          ports:
+            - containerPort: 9000
+          env:
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: loki-minio
+                  key: accesskey
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: loki-minio
+                  key: secretkey
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: loki-minio
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki-minio
+  namespace: {{ .Values.backend.loki.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selector:
+    app: loki-minio
+  ports:
+    - port: 9000
+      targetPort: 9000
+---
+apiVersion: loki.grafana.com/v1
+kind: LokiStack
+metadata:
+  name: logging-loki
+  namespace: {{ .Values.backend.loki.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  size: 1x.demo
+  storage:
+    secret:
+      name: loki-minio
+      type: s3
+    schemas:
+      - effectiveDate: "2024-10-01"
+        version: v13
+  storageClassName: {{ .Values.backend.loki.storageClassName | default "gp3-csi" }}
+  tenants:
+    mode: openshift-logging
+---
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: collector
+  namespace: {{ .Values.backend.loki.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  outputs:
+    - name: default-lokistack
+      type: lokiStack
+      lokiStack:
+        target:
+          name: logging-loki
+          namespace: {{ .Values.backend.loki.namespace }}
+        authentication:
+          token:
+            from: serviceAccount
+      tls:
+        ca:
+          key: service-ca.crt
+          secretName: openshift-service-ca.crt
+  pipelines:
+    - name: default
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - default-lokistack
+  serviceAccount:
+    name: collector
+{{- end }}

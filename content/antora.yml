@@ -1,0 +1,6 @@
+name: openshift-observability-otel-lab
+title: "OpenShift Observability with OpenTelemetry"
+version: main
+start_page: index.adoc
+nav:
+  - modules/ROOT/nav.adoc

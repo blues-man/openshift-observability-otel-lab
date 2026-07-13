@@ -1,0 +1,11 @@
+{{- if .Values.app.enabled }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.app.namespace }}
+  labels:
+    app.kubernetes.io/part-of: dice-game
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+{{- end }}

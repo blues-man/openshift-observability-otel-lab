@@ -1,0 +1,5 @@
+apiVersion: v2
+name: dice-game
+description: Polyglot dice game application with OpenTelemetry instrumentation for OpenShift 4.22 observability lab
+type: application
+version: 0.1.0
