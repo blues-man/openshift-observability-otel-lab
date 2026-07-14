@@ -20,7 +20,7 @@ operators:
     enabled: true
     name: loki-operator
     namespace: openshift-operators-redhat
-    channel: stable-6.2
+    channel: stable-6.5
     source: redhat-operators
     sourceNamespace: openshift-marketplace
     installPlanApproval: Automatic
@@ -36,7 +36,7 @@ operators:
     enabled: true
     name: cluster-logging
     namespace: openshift-logging
-    channel: stable-6.1
+    channel: stable-6.5
     source: redhat-operators
     sourceNamespace: openshift-marketplace
     installPlanApproval: Automatic

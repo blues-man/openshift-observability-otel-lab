@@ -1,10 +1,8 @@
 {{- if .Values.operators.enabled }}
 # ============================================================
-# OpenTelemetry Operator
+# OpenTelemetry Operator (AllNamespaces install mode)
 # ============================================================
 {{- if .Values.operators.opentelemetry.enabled }}
-{{- $existing := lookup "operators.coreos.com/v1alpha1" "Subscription" .Values.operators.opentelemetry.namespace .Values.operators.opentelemetry.name }}
-{{- if not $existing.metadata }}
 ---
 apiVersion: v1
 kind: Namespace
@@ -22,9 +20,7 @@ metadata:
   namespace: {{ .Values.operators.opentelemetry.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
-spec:
-  targetNamespaces:
-    - {{ .Values.operators.opentelemetry.namespace }}
+spec: {}
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -42,14 +38,11 @@ spec:
   source: {{ .Values.operators.opentelemetry.source }}
   sourceNamespace: {{ .Values.operators.opentelemetry.sourceNamespace }}
 {{- end }}
-{{- end }}
 
 # ============================================================
-# Tempo Operator
+# Tempo Operator (AllNamespaces install mode)
 # ============================================================
 {{- if .Values.operators.tempo.enabled }}
-{{- $existing := lookup "operators.coreos.com/v1alpha1" "Subscription" .Values.operators.tempo.namespace .Values.operators.tempo.name }}
-{{- if not $existing.metadata }}
 ---
 apiVersion: v1
 kind: Namespace
@@ -67,9 +60,7 @@ metadata:
   namespace: {{ .Values.operators.tempo.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
-spec:
-  targetNamespaces:
-    - {{ .Values.operators.tempo.namespace }}
+spec: {}
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -87,14 +78,29 @@ spec:
   source: {{ .Values.operators.tempo.source }}
   sourceNamespace: {{ .Values.operators.tempo.sourceNamespace }}
 {{- end }}
-{{- end }}
 
 # ============================================================
-# Loki Operator (global namespace — AllNamespaces install mode)
+# Loki Operator (AllNamespaces install mode)
 # ============================================================
 {{- if .Values.operators.loki.enabled }}
-{{- $existing := lookup "operators.coreos.com/v1alpha1" "Subscription" .Values.operators.loki.namespace .Values.operators.loki.name }}
-{{- if not $existing.metadata }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.operators.loki.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+  labels:
+    demo.redhat.com/application: "observability-lab"
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: {{ .Values.operators.loki.namespace }}-og
+  namespace: {{ .Values.operators.loki.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec: {}
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -112,14 +118,11 @@ spec:
   source: {{ .Values.operators.loki.source }}
   sourceNamespace: {{ .Values.operators.loki.sourceNamespace }}
 {{- end }}
-{{- end }}
 
 # ============================================================
-# Cluster Observability Operator
+# Cluster Observability Operator (AllNamespaces install mode)
 # ============================================================
 {{- if .Values.operators.clusterObservability.enabled }}
-{{- $existing := lookup "operators.coreos.com/v1alpha1" "Subscription" .Values.operators.clusterObservability.namespace .Values.operators.clusterObservability.name }}
-{{- if not $existing.metadata }}
 ---
 apiVersion: v1
 kind: Namespace
@@ -137,9 +140,7 @@ metadata:
   namespace: {{ .Values.operators.clusterObservability.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
-spec:
-  targetNamespaces:
-    - {{ .Values.operators.clusterObservability.namespace }}
+spec: {}
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -157,14 +158,11 @@ spec:
   source: {{ .Values.operators.clusterObservability.source }}
   sourceNamespace: {{ .Values.operators.clusterObservability.sourceNamespace }}
 {{- end }}
-{{- end }}
 
 # ============================================================
-# Cluster Logging Operator
+# Cluster Logging Operator (AllNamespaces install mode)
 # ============================================================
 {{- if .Values.operators.clusterLogging.enabled }}
-{{- $existing := lookup "operators.coreos.com/v1alpha1" "Subscription" .Values.operators.clusterLogging.namespace .Values.operators.clusterLogging.name }}
-{{- if not $existing.metadata }}
 ---
 apiVersion: v1
 kind: Namespace
@@ -182,9 +180,7 @@ metadata:
   namespace: {{ .Values.operators.clusterLogging.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
-spec:
-  targetNamespaces:
-    - {{ .Values.operators.clusterLogging.namespace }}
+spec: {}
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -201,7 +197,6 @@ spec:
   name: {{ .Values.operators.clusterLogging.name }}
   source: {{ .Values.operators.clusterLogging.source }}
   sourceNamespace: {{ .Values.operators.clusterLogging.sourceNamespace }}
-{{- end }}
 {{- end }}
 
 {{- end }}

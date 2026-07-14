@@ -3,7 +3,7 @@ showroom:
   namespace: showroom
   name: showroom
   content:
-    repoUrl: ""
+    repoUrl: "https://github.com/blues-man/openshift-observability-otel-lab.git"
     repoRef: "main"
     antoraPlaybook: "site.yml"
     image: "quay.io/rhpds/showroom-content:v1.3.1"

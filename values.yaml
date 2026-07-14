@@ -41,7 +41,7 @@ components:
       enabled: true
       name: loki-operator
       namespace: openshift-operators-redhat
-      channel: stable-6.2
+      channel: stable-6.5
       source: redhat-operators
       sourceNamespace: openshift-marketplace
       installPlanApproval: Automatic
@@ -57,7 +57,7 @@ components:
       enabled: true
       name: cluster-logging
       namespace: openshift-logging
-      channel: stable-6.1
+      channel: stable-6.5
       source: redhat-operators
       sourceNamespace: openshift-marketplace
       installPlanApproval: Automatic
@@ -116,7 +116,7 @@ components:
     namespace: showroom
     name: showroom
     content:
-      repoUrl: ""
+      repoUrl: "https://github.com/blues-man/openshift-observability-otel-lab.git"
       repoRef: "main"
       antoraPlaybook: "site.yml"
       image: "quay.io/rhpds/showroom-content:v1.3.1"
