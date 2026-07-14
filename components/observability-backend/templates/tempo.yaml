@@ -54,14 +54,14 @@ spec:
     spec:
       initContainers:
         - name: create-bucket
-          image: minio/minio:latest
+          image: quay.io/minio/minio:latest
           command: ["mkdir", "-p", "/data/tempo"]
           volumeMounts:
             - name: data
               mountPath: /data
       containers:
         - name: minio
-          image: minio/minio:latest
+          image: quay.io/minio/minio:latest
           command:
             - minio
             - server
