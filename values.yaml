@@ -5,7 +5,7 @@
 # GitOps Configuration
 # ============================================================
 gitops:
-  repoUrl: ""
+  repoUrl: "https://github.com/blues-man/openshift-observability-otel-lab.git"
   revision: "main"
   basePath: "."
 
