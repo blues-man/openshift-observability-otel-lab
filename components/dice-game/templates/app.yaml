@@ -18,6 +18,8 @@ spec:
     metadata:
       labels:
         app: frontend
+      annotations:
+        instrumentation.opentelemetry.io/inject-nodejs: "true"
     spec:
       containers:
         - name: frontend
@@ -25,6 +27,8 @@ spec:
           ports:
             - containerPort: 4000
           env:
+            - name: FRONTEND_PORT
+              value: "4000"
             - name: BACKEND1_URL
               value: "http://backend1:5000/rolldice"
             - name: BACKEND2_URL
