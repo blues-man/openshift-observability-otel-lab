@@ -15,9 +15,11 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 type: Opaque
-data:
-  accesskey: {{ .Values.backend.tempo.minio.accessKey | b64enc }}
-  secretkey: {{ .Values.backend.tempo.minio.secretKey | b64enc }}
+stringData:
+  bucket: tempo
+  endpoint: http://tempo-minio.{{ .Values.backend.tempo.namespace }}.svc:9000
+  access_key_id: {{ .Values.backend.tempo.minio.accessKey }}
+  access_key_secret: {{ .Values.backend.tempo.minio.secretKey }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -50,6 +52,13 @@ spec:
       labels:
         app: tempo-minio
     spec:
+      initContainers:
+        - name: create-bucket
+          image: minio/minio:latest
+          command: ["mkdir", "-p", "/data/tempo"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
       containers:
         - name: minio
           image: minio/minio:latest
@@ -60,16 +69,16 @@ spec:
           ports:
             - containerPort: 9000
           env:
-            - name: MINIO_ACCESS_KEY
+            - name: MINIO_ROOT_USER
               valueFrom:
                 secretKeyRef:
                   name: tempo-minio
-                  key: accesskey
-            - name: MINIO_SECRET_KEY
+                  key: access_key_id
+            - name: MINIO_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: tempo-minio
-                  key: secretkey
+                  key: access_key_secret
           volumeMounts:
             - name: data
               mountPath: /data

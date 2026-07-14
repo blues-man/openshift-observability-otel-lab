@@ -23,5 +23,4 @@ spec:
     env:
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
         value: "http://otel-collector.{{ .Values.app.namespace }}.svc:4318"
-  addK8sUIDAttributes: true
 {{- end }}
