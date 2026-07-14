@@ -8,6 +8,8 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
+  exporter:
+    endpoint: "http://otel-collector.{{ .Values.app.namespace }}.svc.cluster.local:4317"
   propagators:
     - tracecontext
     - baggage
@@ -18,9 +20,17 @@ spec:
   python:
     env:
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: "http://otel-collector.{{ .Values.app.namespace }}.svc:4318"
+        value: "http://otel-collector.{{ .Values.app.namespace }}.svc.cluster.local:4318"
+      - name: OTEL_LOGS_EXPORTER
+        value: otlp
+      - name: OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED
+        value: "true"
   nodejs:
     env:
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: "http://otel-collector.{{ .Values.app.namespace }}.svc:4318"
+        value: "http://otel-collector.{{ .Values.app.namespace }}.svc.cluster.local:4318"
+  java:
+    env:
+      - name: OTEL_LOGS_EXPORTER
+        value: otlp
 {{- end }}

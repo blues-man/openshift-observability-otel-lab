@@ -27,11 +27,11 @@ spec:
           ports:
             - containerPort: 4000
           env:
-            - name: DICE_ROLLER1_URL
+            - name: BACKEND1_URL
               value: "http://backend1:5000/rolldice"
-            - name: DICE_ROLLER2_URL
+            - name: BACKEND2_URL
               value: "http://backend2:5165/rolldice"
-            - name: DICE_ROLLER3_URL
+            - name: BACKEND3_URL
               value: "http://backend3:5165/rolldice"
 ---
 apiVersion: v1
