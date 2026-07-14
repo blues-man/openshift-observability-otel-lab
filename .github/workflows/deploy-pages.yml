@@ -26,8 +26,10 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Antora
-        run: npm i -g @antora/cli@3.1 @antora/site-generator@3.1
+      - name: Install Antora and extensions
+        run: |
+          npm i -g @antora/cli@3.1 @antora/site-generator@3.1
+          npm install
 
       - name: Build site
         run: antora --fetch site.yml
@@ -35,7 +37,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: build/site
+          path: www
 
   deploy:
     environment:
