@@ -18,8 +18,6 @@ spec:
     metadata:
       labels:
         app: frontend
-      annotations:
-        instrumentation.opentelemetry.io/inject-nodejs: "true"
     spec:
       containers:
         - name: frontend
@@ -33,8 +31,6 @@ spec:
               value: "http://backend2:5165/rolldice"
             - name: BACKEND3_URL
               value: "http://backend3:5165/rolldice"
-            - name: OTEL_NODEJS_DISABLED_INSTRUMENTATIONS
-              value: "http,net"
 ---
 apiVersion: v1
 kind: Service
