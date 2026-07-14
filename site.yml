@@ -1,27 +1,27 @@
+---
 site:
   title: "OpenShift Observability with OpenTelemetry"
+  url: https://github.com/blues-man/openshift-observability-otel-lab
   start_page: openshift-observability-otel-lab::index.adoc
 
 content:
   sources:
     - url: .
       start_path: content
-      branches: HEAD
-
-asciidoc:
-  attributes:
-    experimental: ''
-    idprefix: ''
-    idseparator: '-'
-    source-highlighter: highlight.js
 
 ui:
   bundle:
-    url: https://github.com/rhpds/rhdp_showroom_theme/releases/download/rh-one-2025/ui-bundle.zip
+    url: https://github.com/rhpds/rhdp_showroom_theme/releases/download/latest/ui-bundle.zip
     snapshot: true
-  supplemental_files:
-    - path: partials/header-content.hbs
-      contents: ''
 
-runtime:
-  fetch: true
+antora:
+  extensions:
+    - require: '@sntke/antora-mermaid-extension'
+      mermaid_library_url: https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs
+      script_stem: header-scripts
+      mermaid_initialize_options:
+        start_on_load: true
+    - require: '@andrew-jones/antora-tabs-extension'
+
+output:
+  dir: ./www
