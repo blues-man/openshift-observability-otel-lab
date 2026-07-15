@@ -123,42 +123,30 @@ metadata:
     argocd.argoproj.io/sync-wave: "2"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: collector-log-writer
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
-rules:
-  - apiGroups:
-      - loki.grafana.com
-    resources:
-      - application
-      - infrastructure
-    resourceNames:
-      - logs
-    verbs:
-      - create
-  - apiGroups:
-      - ""
-    resources:
-      - pods
-      - namespaces
-      - nodes
-    verbs:
-      - get
-      - list
-      - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: collector-log-writer
+  name: collector-collect-application-logs
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: collector-log-writer
+  name: collect-application-logs
+subjects:
+  - kind: ServiceAccount
+    name: collector
+    namespace: {{ .Values.backend.loki.namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: collector-collect-infrastructure-logs
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: collect-infrastructure-logs
 subjects:
   - kind: ServiceAccount
     name: collector
