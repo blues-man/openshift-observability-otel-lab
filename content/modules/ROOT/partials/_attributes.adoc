@@ -1,10 +1,8 @@
-// Environment attributes — injected by Showroom user_data or set manually
-:ocp_version: %ocp_version%
-:console_url: %openshift_console_url%
-:api_url: %openshift_api_url%
-:user: %user_name%
-:password: %user_password%
-:bastion_host: %bastion_public_hostname%
+// Environment attributes — injected via user_data.yml → antora.yml asciidoc.attributes
+:console_url: {openshift_console_url}
+:api_url: {openshift_api_url}
+ifndef::user_name[:user_name: admin]
+ifndef::user_password[:user_password: (see lab provisioning)]
 
 // Lab-specific attributes
 :lab_title: OpenShift Observability with OpenTelemetry
@@ -20,6 +18,6 @@
 :otel_collector_version: 0.147.0
 :otel_operator_channel: stable
 :tempo_operator_channel: stable
-:loki_operator_channel: stable-6.2
+:loki_operator_channel: stable-6.5
 :coo_operator_channel: stable
-:logging_operator_channel: stable-6.1
+:logging_operator_channel: stable-6.5
