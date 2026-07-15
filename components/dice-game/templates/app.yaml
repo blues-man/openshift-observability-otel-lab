@@ -158,7 +158,7 @@ spec:
             - containerPort: 5165
           env:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "http://otel-collector.{{ .Values.app.namespace }}.svc:4317"
+              value: "http://otel-collector-collector.{{ .Values.app.namespace }}.svc:4317"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: "service.name=backend3"
             - name: RATE_ERROR
