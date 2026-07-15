@@ -27,7 +27,7 @@ A load generator sends continuous traffic so you always have fresh telemetry to 
 
 Verify that all components are running:
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc get deployments -n {tutorial_namespace}
 ----
@@ -45,7 +45,7 @@ loadgenerator    1/1     1            1           10m
 
 Confirm that all pods are in a *Running* state:
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc get pods -n {tutorial_namespace}
 ----
@@ -54,7 +54,7 @@ oc get pods -n {tutorial_namespace}
 
 OpenTelemetry auto-instrumentation is configured through an `Instrumentation` custom resource. Retrieve it:
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc get instrumentation -n {tutorial_namespace} -o yaml
 ----
@@ -75,7 +75,7 @@ When a pod with an injection annotation starts, the Operator's mutating webhook 
 
 The application-level Collector receives OTLP telemetry from all four services and routes it to the observability backends:
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc get opentelemetrycollector -n {tutorial_namespace} -o yaml
 ----
@@ -305,7 +305,7 @@ The count connector acts as both an *exporter* (in the traces and logs pipelines
 
 The OpenTelemetry Operator will reconcile the updated CR and restart the Collector deployment. Wait for the rollout to complete:
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc rollout status deployment/{collector_name} -n {tutorial_namespace}
 ----

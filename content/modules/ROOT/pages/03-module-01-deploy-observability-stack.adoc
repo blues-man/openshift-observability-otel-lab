@@ -69,7 +69,7 @@ It stores traces in S3-compatible object storage -- in this lab a MinIO instance
 
 === Step 1 -- Inspect the TempoStack CR
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc get tempostack -n {tempo_namespace}
 ----
@@ -85,7 +85,7 @@ The *Ready* status confirms that Tempo is up and connected to its storage backen
 
 === Step 2 -- Check Tempo pods
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc get pods -n {tempo_namespace}
 ----
@@ -104,7 +104,7 @@ tempo-simplest-gateway-...                  1/1     Running   0          ...
 
 === Step 3 -- Check the Tempo route
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc get routes -n {tempo_namespace}
 ----
@@ -128,7 +128,7 @@ The Logging Operator's *ClusterLogForwarder* routes application and infrastructu
 
 === Step 1 -- Inspect the LokiStack CR
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc get lokistack -n {loki_namespace}
 ----
@@ -142,7 +142,7 @@ logging-loki   Ready            True               ...
 
 === Step 2 -- Inspect the ClusterLogForwarder
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc get clusterlogforwarder -n {loki_namespace}
 ----
@@ -154,7 +154,7 @@ instance   ...
 
 View its configuration:
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc get clusterlogforwarder instance -n {loki_namespace} -o yaml | head -40
 ----
@@ -202,7 +202,7 @@ When User Workload Monitoring is enabled, a separate Prometheus instance scrapes
 
 === Step 2 -- Check the COO MonitoringStack
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc get monitoringstack -n {coo_namespace}
 ----
@@ -214,7 +214,7 @@ monitoringstack-sample   ...
 
 Inspect its specification:
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc get monitoringstack -n {coo_namespace} -o yaml | grep -A5 otlp
 ----

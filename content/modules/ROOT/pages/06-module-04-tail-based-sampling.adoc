@@ -178,7 +178,7 @@ Notice the key differences from the previous collector configuration:
 
 === Step 2 -- Wait for the collector to restart
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc rollout status deployment/otel-collector -n {tutorial_namespace}
 ----
@@ -241,7 +241,7 @@ image::tail-sampling-traces-filtered-placeholder.png[Traces view showing tail-sa
 The tail sampling processor exposes internal metrics about its decisions.
 Query them from the collector:
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc exec -n {tutorial_namespace} deployment/otel-collector -- curl -s localhost:8888/metrics | grep tail_sampling
 ----

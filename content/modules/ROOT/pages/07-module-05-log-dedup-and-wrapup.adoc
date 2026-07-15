@@ -20,7 +20,7 @@ Among them, "TODO: remove before production" messages repeat on every request --
 Open the OpenShift Console and navigate to *Observe -> Logs*.
 Filter for the `{tutorial_namespace}` namespace.
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc logs deployment/backend3 -n {tutorial_namespace} --tail=30
 ----
@@ -32,7 +32,7 @@ Repetitive entries such as `TODO: remove before production` and periodic health-
 
 Run a quick duplicate analysis directly on the pod logs:
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc logs deployment/backend3 -n {tutorial_namespace} --tail=200 | sort | uniq -c | sort -rn | head -10
 ----
@@ -135,7 +135,7 @@ The deduplication processor sits after filtering (so it only deduplicates logs w
 
 === Step 2 -- Wait for the Collector to Restart
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc rollout status deployment/otel-collector -n {tutorial_namespace}
 ----

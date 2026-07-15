@@ -91,14 +91,14 @@ instrumentation.opentelemetry.io/my-instrumentation configured
 
 The sampling configuration is injected at pod start time. Restart the application deployments to pick up the new value:
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc rollout restart deployment/frontend deployment/backend1 deployment/backend2 -n {tutorial_namespace}
 ----
 
 Wait for the rollout to complete:
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc rollout status deployment/frontend -n {tutorial_namespace}
 ----
@@ -201,14 +201,14 @@ instrumentation.opentelemetry.io/my-instrumentation configured
 
 === Step 2 -- Restart Pods
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc rollout restart deployment/frontend deployment/backend1 deployment/backend2 -n {tutorial_namespace}
 ----
 
 Wait for the rollout to complete:
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc rollout status deployment/frontend -n {tutorial_namespace}
 ----
