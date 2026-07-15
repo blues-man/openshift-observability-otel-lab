@@ -1,0 +1,66 @@
+---
+- name: Destroy per-user lab resources (app namespaces + showroom + RBAC)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    num_users: "{{ showroom_num_users | default(1) | int }}"
+    user_prefix: "{{ showroom_user_prefix | default('user') }}"
+
+  tasks:
+    - name: Build users list
+      ansible.builtin.set_fact:
+        users: >-
+          {{ range(1, num_users | int + 1) | map('regex_replace', '^(.*)$', user_prefix ~ '\1') | list }}
+
+    - name: Build list of cluster-scoped resources to delete
+      ansible.builtin.set_fact:
+        cluster_rbac_names: >-
+          {{ users | map('regex_replace', '^(.*)$', 'observability-app-\1') |
+             product(['otel-collector-k8sattributes-', 'otel-collector-tempo-write-', 'otel-collector-loki-write-']) |
+             map('reverse') | map('join', '') | list }}
+
+    - name: Delete per-user app namespaces
+      kubernetes.core.k8s:
+        state: absent
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "observability-app-{{ item }}"
+      loop: "{{ users }}"
+
+    - name: Delete per-user showroom namespaces
+      kubernetes.core.k8s:
+        state: absent
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "showroom-{{ item }}"
+      loop: "{{ users }}"
+
+    - name: Delete per-user ClusterRoleBindings
+      kubernetes.core.k8s:
+        state: absent
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: "{{ item }}"
+      loop: "{{ cluster_rbac_names }}"
+
+    - name: Delete per-user ClusterRoles
+      kubernetes.core.k8s:
+        state: absent
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRole
+          metadata:
+            name: "{{ item }}"
+      loop: "{{ cluster_rbac_names }}"
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg: "Deleted {{ users | length }} user environments (app + showroom namespaces + RBAC)"

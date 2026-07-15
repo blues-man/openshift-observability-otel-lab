@@ -135,6 +135,14 @@ components:
           memory: "1Gi"
 
 # ============================================================
+# Per-User Deployment (ApplicationSet)
+# ============================================================
+# Each entry generates an ArgoCD Application deploying the dice-game
+# stack to namespace observability-app-<name>.
+# Example: [{name: user1}, {name: user2}, {name: user3}]
+users: []
+
+# ============================================================
 # Values injected by field content workload (do not modify)
 # ============================================================
 deployer:

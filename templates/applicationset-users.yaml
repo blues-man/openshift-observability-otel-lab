@@ -1,0 +1,59 @@
+{{- if .Values.users }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: {{ .Release.Name }}-dice-game-users
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    demo.redhat.com/application: "observability-lab"
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          {{- range .Values.users }}
+          - name: {{ .name }}
+          {{- end }}
+  template:
+    metadata:
+      name: {{ .Release.Name }}-dice-game-{{ "{{.name}}" }}
+      namespace: {{ .Values.argocd.namespace }}
+      labels:
+        demo.redhat.com/application: "observability-lab"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: {{ .Values.argocd.project }}
+      source:
+        repoURL: {{ .Values.gitops.repoUrl }}
+        targetRevision: {{ .Values.gitops.revision }}
+        path: {{ .Values.gitops.basePath }}/components/dice-game
+        helm:
+          valuesObject:
+            app:
+              enabled: true
+              namespace: observability-app-{{ "{{.name}}" }}
+              frontend: {{ .Values.components.diceGame.frontend | toYaml | nindent 16 }}
+              backend1: {{ .Values.components.diceGame.backend1 | toYaml | nindent 16 }}
+              backend2: {{ .Values.components.diceGame.backend2 | toYaml | nindent 16 }}
+              backend3: {{ .Values.components.diceGame.backend3 | toYaml | nindent 16 }}
+              loadgen: {{ .Values.components.diceGame.loadgen | toYaml | nindent 16 }}
+              collector: {{ .Values.components.diceGame.collector | toYaml | nindent 16 }}
+              userInfo: {{ .Values.components.diceGame.userInfo | toYaml | nindent 16 }}
+            deployer:
+              domain: {{ .Values.deployer.domain | quote }}
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: observability-app-{{ "{{.name}}" }}
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+{{- end }}
