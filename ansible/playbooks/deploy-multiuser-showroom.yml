@@ -1,0 +1,54 @@
+---
+- name: Deploy per-user showroom instances
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    cluster_domain: "{{ showroom_deployer_domain }}"
+    num_users: "{{ showroom_num_users | default(1) | int }}"
+    user_prefix: "{{ showroom_user_prefix | default('user') }}"
+    user_password: "{{ showroom_user_password | default('openshift') }}"
+    content_git_repo: "https://github.com/blues-man/openshift-observability-otel-lab.git"
+    content_git_repo_ref: "main"
+
+  tasks:
+    - name: Validate cluster_domain is set
+      ansible.builtin.assert:
+        that:
+          - cluster_domain is defined and cluster_domain | length > 0
+        fail_msg: >-
+          showroom_deployer_domain must be set.
+          Pass it as -e showroom_deployer_domain=apps.cluster-XXXX.example.com
+
+    - name: Build users list
+      ansible.builtin.set_fact:
+        users: >-
+          {{ range(1, num_users | int + 1) | map('regex_replace', '^(.*)$', user_prefix ~ '\1') | list }}
+
+    - name: Deploy showroom for each user
+      ansible.builtin.include_role:
+        name: deploy-showroom
+      vars:
+        showroom_guid: "{{ item }}"
+        showroom_deployer_domain: "{{ cluster_domain }}"
+        showroom_content_git_repo: "{{ content_git_repo }}"
+        showroom_content_git_repo_ref: "{{ content_git_repo_ref }}"
+        showroom_user_data:
+          cluster_domain: "{{ cluster_domain }}"
+          demo_namespace: tutorial-application
+          demo_app: dice-game
+          ocp_version: "4.22"
+          openshift_console_url: "https://console-openshift-console.{{ cluster_domain }}"
+          openshift_api_url: "https://api.{{ cluster_domain | regex_replace('^apps\\.', '') }}:6443"
+          tempo_namespace: tempo-observability
+          loki_namespace: openshift-logging
+          coo_namespace: coo-observability
+          tutorial_namespace: tutorial-application
+          user_name: "{{ item }}"
+          user_password: "{{ user_password }}"
+      loop: "{{ users }}"
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg: "Deployed {{ users | length }} showroom instances"

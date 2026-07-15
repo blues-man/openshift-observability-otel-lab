@@ -1,0 +1,29 @@
+---
+- name: Destroy per-user showroom instances
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    num_users: "{{ showroom_num_users | default(1) | int }}"
+    user_prefix: "{{ showroom_user_prefix | default('user') }}"
+
+  tasks:
+    - name: Build users list
+      ansible.builtin.set_fact:
+        users: >-
+          {{ range(1, num_users | int + 1) | map('regex_replace', '^(.*)$', user_prefix ~ '\1') | list }}
+
+    - name: Delete showroom namespaces
+      kubernetes.core.k8s:
+        state: absent
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "showroom-{{ item }}"
+      loop: "{{ users }}"
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg: "Deleted {{ users | length }} showroom namespaces"

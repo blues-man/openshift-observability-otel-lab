@@ -1,0 +1,27 @@
+---
+# Required — validated in tasks/main.yml
+# showroom_guid: ""
+# showroom_deployer_domain: ""
+
+showroom_namespace: "showroom-{{ showroom_guid }}"
+
+showroom_content_git_repo: "https://github.com/blues-man/openshift-observability-otel-lab.git"
+showroom_content_git_repo_ref: "main"
+showroom_antora_playbook: "site.yml"
+
+showroom_content_image: "quay.io/rhpds/showroom-content:v1.3.1"
+showroom_git_cloner_image: "quay.io/rhpds/git-cloner:v1.1.2"
+showroom_antora_image: "quay.io/rhpds/antora:v1.0.1"
+showroom_proxy_image: "quay.io/rhpds/nginx:1.25"
+
+showroom_terminal_enabled: true
+showroom_terminal_image: "quay.io/rhpds/openshift-showroom-terminal-ocp:latest"
+showroom_terminal_resources:
+  requests:
+    cpu: "500m"
+    memory: "512Mi"
+  limits:
+    cpu: "500m"
+    memory: "1Gi"
+
+showroom_user_data: {}
