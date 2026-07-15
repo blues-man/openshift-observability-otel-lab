@@ -126,7 +126,7 @@ spec:
     mode: openshift
     authentication:
       - tenantName: dev
-        tenantId: ""
+        tenantId: dev
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
