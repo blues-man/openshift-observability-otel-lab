@@ -20,8 +20,4 @@ metadata:
     argocd.argoproj.io/sync-wave: "3"
 spec:
   type: DistributedTracing
-  distributedTracing:
-    tempoStack:
-      name: simplest
-      namespace: {{ .Values.backend.tempo.namespace }}
 {{- end }}
