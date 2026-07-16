@@ -44,6 +44,10 @@ spec:
               loadgen: {{ .Values.components.diceGame.loadgen | toYaml | nindent 16 }}
               collector: {{ .Values.components.diceGame.collector | toYaml | nindent 16 }}
               userInfo: {{ .Values.components.diceGame.userInfo | toYaml | nindent 16 }}
+              observabilityViewer:
+                tempoNamespace: {{ .Values.components.observabilityBackend.tempo.namespace | quote }}
+                lokiNamespace: {{ .Values.components.observabilityBackend.loki.namespace | quote }}
+                cooNamespace: {{ .Values.components.observabilityBackend.coo.namespace | quote }}
             deployer:
               domain: {{ .Values.deployer.domain | quote }}
       destination:
