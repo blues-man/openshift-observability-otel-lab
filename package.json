@@ -3,6 +3,6 @@
   "private": true,
   "dependencies": {
     "@sntke/antora-mermaid-extension": "^3.0.0",
-    "@andrew-jones/antora-tabs-extension": "^0.1.0"
+    "@andrew-jones/antora-tabs-extension": "^1.0.0"
   }
 }
