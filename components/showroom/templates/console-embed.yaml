@@ -1,0 +1,88 @@
+{{- if and .Values.showroom.enabled (.Values.showroom.consoleEmbed).enabled .Values.deployer.domain }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.showroom.name }}-console-embed
+  namespace: {{ .Values.showroom.namespace | default "showroom" }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Values.showroom.name }}-console-embed
+rules:
+- apiGroups:
+  - operator.openshift.io
+  resources:
+  - ingresscontrollers
+  verbs:
+  - get
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Values.showroom.name }}-console-embed
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Values.showroom.name }}-console-embed
+subjects:
+- kind: ServiceAccount
+  name: {{ .Values.showroom.name }}-console-embed
+  namespace: {{ .Values.showroom.namespace | default "showroom" }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.showroom.name }}-console-embed
+  namespace: {{ .Values.showroom.namespace | default "showroom" }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      serviceAccountName: {{ .Values.showroom.name }}-console-embed
+      restartPolicy: OnFailure
+      containers:
+      - name: patch
+        image: registry.redhat.io/openshift4/ose-cli:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          echo "Patching IngressController to allow console iframe embedding..."
+          oc patch ingresscontroller default \
+            -n openshift-ingress-operator \
+            --type=merge \
+            -p '{
+              "spec": {
+                "httpHeaders": {
+                  "actions": {
+                    "response": [
+                      {
+                        "name": "X-Frame-Options",
+                        "action": {
+                          "type": "Delete"
+                        }
+                      },
+                      {
+                        "name": "Content-Security-Policy",
+                        "action": {
+                          "type": "Set",
+                          "set": {
+                            "value": "frame-ancestors '"'"'self'"'"' https://*.{{ .Values.deployer.domain }}"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }'
+          echo "IngressController patched. Waiting for router rollout..."
+          oc rollout status deployment/router-default -n openshift-ingress --timeout=300s || true
+          echo "Console embed patch complete."
+{{- end }}

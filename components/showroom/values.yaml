@@ -27,6 +27,8 @@ showroom:
       limits:
         cpu: "500m"
         memory: "1Gi"
+  consoleEmbed:
+    enabled: true
 
 deployer:
   domain: ""

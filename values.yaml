@@ -133,6 +133,8 @@ components:
         limits:
           cpu: "500m"
           memory: "1Gi"
+    consoleEmbed:
+      enabled: true
 
 # ============================================================
 # Per-User Deployment (multi-tenant)
