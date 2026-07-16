@@ -92,6 +92,8 @@ data:
     loki_namespace: {{ .Values.showroom.userdata.lokiNamespace | default "openshift-logging" | quote }}
     coo_namespace: {{ .Values.showroom.userdata.cooNamespace | default "coo-observability" | quote }}
     tutorial_namespace: {{ .Values.showroom.userdata.tutorialNamespace | default "tutorial-application" | quote }}
+    user_name: {{ .Values.showroom.userdata.userName | default "user1" | quote }}
+    user_password: {{ .Values.showroom.userdata.userPassword | default "openshift" | quote }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

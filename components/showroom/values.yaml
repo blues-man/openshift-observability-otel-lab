@@ -12,6 +12,8 @@ showroom:
     tempoNamespace: "tempo-observability"
     lokiNamespace: "openshift-logging"
     cooNamespace: "coo-observability"
+    userName: "user1"
+    userPassword: "openshift"
   nookbag:
     enabled: false
     bundleUrl: ""

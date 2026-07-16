@@ -61,4 +61,73 @@ spec:
         syncOptions:
           - CreateNamespace=true
           - ServerSideApply=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: {{ .Release.Name }}-showroom-users
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    demo.redhat.com/application: "observability-lab"
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  generators:
+  - list:
+      elements:
+{{- $userCount2 := int .Values.user.count }}
+{{- range $index := until $userCount2 }}
+      - user: {{ $.Values.user.prefix }}{{ add $index 1 }}
+{{- end }}
+  template:
+    metadata:
+      name: {{ .Release.Name }}-showroom-{{- "{{" }} user {{- "}}" }}
+      namespace: {{ .Values.argocd.namespace }}
+      labels:
+        demo.redhat.com/application: "observability-lab"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: {{ .Values.argocd.project }}
+      source:
+        repoURL: {{ .Values.gitops.repoUrl }}
+        targetRevision: {{ .Values.gitops.revision }}
+        path: {{ .Values.gitops.basePath }}/components/showroom
+        helm:
+          values: |
+            showroom:
+              enabled: {{ .Values.components.showroom.enabled }}
+              namespace: showroom-{{- "{{" }} user {{- "}}" }}
+              name: {{ .Values.components.showroom.name }}
+              content: {{ .Values.components.showroom.content | toYaml | nindent 16 }}
+              terminal: {{ .Values.components.showroom.terminal | toYaml | nindent 16 }}
+              nookbag: {{ .Values.components.showroom.nookbag | toYaml | nindent 16 }}
+              userdata:
+                tutorialNamespace: observability-app-{{- "{{" }} user {{- "}}" }}
+                tempoNamespace: {{ .Values.components.observabilityBackend.tempo.namespace | quote }}
+                lokiNamespace: {{ .Values.components.observabilityBackend.loki.namespace | quote }}
+                cooNamespace: {{ .Values.components.observabilityBackend.coo.namespace | quote }}
+                userName: {{ "{{" }} user {{- "}}" }}
+                userPassword: "openshift"
+            deployer:
+              domain: {{ .Values.deployer.domain | quote }}
+            demo:
+              namespace: observability-app-{{- "{{" }} user {{- "}}" }}
+              appName: "dice-game"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: showroom-{{- "{{" }} user {{- "}}" }}
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          limit: 30
+          backoff:
+            duration: "5s"
+            factor: 2
+            maxDuration: "5m"
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
 {{- end }}
