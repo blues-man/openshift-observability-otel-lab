@@ -5,7 +5,7 @@ ifndef::user_name[:user_name: user1]
 ifndef::user_password[:user_password: (see lab provisioning)]
 
 // Lab-specific attributes — ifndef guards allow user_data overrides for multi-tenant deployments
-ifndef::tutorial_namespace[:tutorial_namespace: showroom-user1]
+ifndef::tutorial_namespace[:tutorial_namespace: observability-app-user1]
 ifndef::tempo_namespace[:tempo_namespace: tempo-observability]
 ifndef::loki_namespace[:loki_namespace: openshift-logging]
 ifndef::coo_namespace[:coo_namespace: coo-observability]

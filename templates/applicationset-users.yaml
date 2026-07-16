@@ -35,7 +35,7 @@ spec:
           values: |
             app:
               enabled: {{ .Values.components.diceGame.enabled }}
-              namespace: showroom-{{- "{{" }} user {{- "}}" }}
+              namespace: observability-app-{{- "{{" }} user {{- "}}" }}
               frontend: {{ .Values.components.diceGame.frontend | toYaml | nindent 16 }}
               backend1: {{ .Values.components.diceGame.backend1 | toYaml | nindent 16 }}
               backend2: {{ .Values.components.diceGame.backend2 | toYaml | nindent 16 }}
@@ -47,7 +47,7 @@ spec:
               domain: {{ .Values.deployer.domain | quote }}
       destination:
         server: https://kubernetes.default.svc
-        namespace: showroom-{{- "{{" }} user {{- "}}" }}
+        namespace: observability-app-{{- "{{" }} user {{- "}}" }}
       syncPolicy:
         automated:
           prune: true

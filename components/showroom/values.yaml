@@ -8,7 +8,7 @@ showroom:
     antoraPlaybook: "site.yml"
     image: "quay.io/rhpds/showroom-content:v1.3.1"
   userdata:
-    tutorialNamespace: "tutorial-application"
+    tutorialNamespace: "observability-app-user1"
     tempoNamespace: "tempo-observability"
     lokiNamespace: "openshift-logging"
     cooNamespace: "coo-observability"

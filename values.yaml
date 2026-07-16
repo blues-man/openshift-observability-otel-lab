@@ -88,7 +88,7 @@ components:
   # --- Dice Game Application ---
   diceGame:
     enabled: true
-    namespace: showroom-user1
+    namespace: observability-app-user1
     frontend:
       image: ghcr.io/pavolloffay/kubecon-eu-2026-opentelemetry-observability-on-budget-frontend:latest
       replicas: 1
