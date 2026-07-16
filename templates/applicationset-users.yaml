@@ -36,6 +36,7 @@ spec:
             app:
               enabled: {{ .Values.components.diceGame.enabled }}
               namespace: observability-app-{{- "{{" }} user {{- "}}" }}
+              user: {{- "{{" }} user {{- "}}" }}
               frontend: {{ .Values.components.diceGame.frontend | toYaml | nindent 16 }}
               backend1: {{ .Values.components.diceGame.backend1 | toYaml | nindent 16 }}
               backend2: {{ .Values.components.diceGame.backend2 | toYaml | nindent 16 }}

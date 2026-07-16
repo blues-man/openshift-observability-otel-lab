@@ -1,6 +1,7 @@
 app:
   enabled: true
   namespace: tutorial-application
+  user: ""
   frontend:
     image: ghcr.io/pavolloffay/kubecon-eu-2026-opentelemetry-observability-on-budget-frontend:latest
     replicas: 1
