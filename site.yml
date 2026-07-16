@@ -2,7 +2,7 @@
 site:
   title: "OpenShift Observability with OpenTelemetry"
   url: https://github.com/blues-man/openshift-observability-otel-lab
-  start_page: openshift-observability-otel-lab::index.adoc
+  start_page: modules::index.adoc
 
 content:
   sources:
