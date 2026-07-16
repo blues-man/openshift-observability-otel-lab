@@ -11,7 +11,8 @@ metadata:
     argocd.argoproj.io/sync-wave: "3"
 spec:
   goTemplate: true
-  goTemplateOptions: ["missingkey=error"]
+  goTemplateOptions:
+    - "missingkey=error"
   generators:
     - list:
         elements:
@@ -35,8 +36,8 @@ spec:
         helm:
           valuesObject:
             app:
-              enabled: true
-              namespace: observability-app-{{ "{{.name}}" }}
+              enabled: {{ .Values.components.diceGame.enabled }}
+              namespace: showroom-{{ "{{.name}}" }}
               frontend: {{ .Values.components.diceGame.frontend | toYaml | nindent 16 }}
               backend1: {{ .Values.components.diceGame.backend1 | toYaml | nindent 16 }}
               backend2: {{ .Values.components.diceGame.backend2 | toYaml | nindent 16 }}
@@ -48,7 +49,7 @@ spec:
               domain: {{ .Values.deployer.domain | quote }}
       destination:
         server: https://kubernetes.default.svc
-        namespace: observability-app-{{ "{{.name}}" }}
+        namespace: showroom-{{ "{{.name}}" }}
       syncPolicy:
         automated:
           prune: true
