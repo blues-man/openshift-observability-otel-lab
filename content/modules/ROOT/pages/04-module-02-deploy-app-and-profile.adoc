@@ -151,6 +151,10 @@ metadata:
   namespace: {tutorial_namespace}
 spec:
   mode: deployment
+  ports:
+    - name: count-metrics
+      port: 8889
+      protocol: TCP
   config:
     receivers:
       otlp:
@@ -268,6 +272,19 @@ spec:
         metrics/count:
           receivers: [count]
           exporters: [prometheus]
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {collector_name}-count-metrics
+  namespace: {tutorial_namespace}
+spec:
+  endpoints:
+    - port: count-metrics
+      interval: 15s
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {collector_name}-collector
 EOF
 ----
 
@@ -297,7 +314,9 @@ The updated configuration adds three key components to the Collector pipeline:
 
 * `filter/drop-health-spans` -- drops spans from `/health` endpoints.
 
-*Prometheus exporter* -- exposes count metrics on port 8889 so you can query them from the OpenShift Console.
+*Prometheus exporter* -- exposes count metrics on port 8889.
+
+*ServiceMonitor* -- tells the User Workload Monitoring Prometheus to scrape the count metrics from port 8889, making them queryable in the OpenShift Console via *Observe -> Metrics*.
 
 The count connector acts as both an *exporter* (in the traces and logs pipelines) and a *receiver* (in the `metrics/count` pipeline), bridging telemetry data into metrics.
 
@@ -318,7 +337,7 @@ deployment "otel-collector" successfully rolled out
 
 == Exercise 4: Analyze Profiling Results
 
-With the count connector active, the Collector is now generating metrics about telemetry volume. The COO MonitoringStack scrapes these metrics via the Prometheus exporter, making them available in the OpenShift Console.
+With the count connector active, the Collector is now generating metrics about telemetry volume. The ServiceMonitor tells User Workload Monitoring to scrape these metrics from the Collector's Prometheus exporter, making them available in the OpenShift Console.
 
 === Query Count Metrics
 
@@ -330,7 +349,7 @@ With the count connector active, the Collector is now generating metrics about t
 
 [source,role="copypaste"]
 ----
-telemetry_spans_count
+telemetry_spans_count_total
 ----
 
 This shows how many non-health-check spans each service generates. Compare the rates across `frontend`, `backend1`, `backend2`, and `backend3`.
@@ -339,7 +358,7 @@ This shows how many non-health-check spans each service generates. Compare the r
 
 [source,role="copypaste"]
 ----
-telemetry_spans_health_count
+telemetry_spans_health_count_total
 ----
 
 These spans come from readiness and liveness probes. They are legitimate for Kubernetes but add no observability value -- the filter processor is already dropping them before they reach TempoStack.
@@ -348,7 +367,7 @@ These spans come from readiness and liveness probes. They are legitimate for Kub
 
 [source,role="copypaste"]
 ----
-telemetry_logs_debug_count
+telemetry_logs_debug_count_total
 ----
 
 This metric reveals how many debug-level logs each service produces. You will likely see *backend3* dominating this count due to its verbose Go logging configuration.
@@ -357,7 +376,7 @@ This metric reveals how many debug-level logs each service produces. You will li
 
 [source,role="copypaste"]
 ----
-telemetry_logs_large_count
+telemetry_logs_large_count_total
 ----
 
 Log records larger than 1000 bytes are often stack traces or serialized objects that inflate storage costs. The filter processor drops these before they reach LokiStack.

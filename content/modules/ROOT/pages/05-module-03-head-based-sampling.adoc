@@ -115,7 +115,7 @@ Open the OpenShift Console and navigate to *Observe -> Metrics*. Run the followi
 
 [source,role="copypaste"]
 ----
-sum(rate(telemetry_spans_count[5m]))
+sum(rate(telemetry_spans_count_total[5m]))
 ----
 
 You should see the span rate drop by approximately 50% compared to the baseline.

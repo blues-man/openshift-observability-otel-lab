@@ -5,6 +5,10 @@ metadata:
   namespace: tutorial-application
 spec:
   mode: deployment
+  ports:
+    - name: count-metrics
+      port: 8889
+      protocol: TCP
   config:
     receivers:
       otlp:
