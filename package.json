@@ -2,7 +2,7 @@
   "name": "openshift-observability-otel-lab",
   "private": true,
   "dependencies": {
-    "@sntke/antora-mermaid-extension": "^3.0.0",
+    "@sntke/antora-mermaid-extension": "^0.0.13",
     "@andrew-jones/antora-tabs-extension": "^1.0.0"
   }
 }
