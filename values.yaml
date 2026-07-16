@@ -137,10 +137,11 @@ components:
 # ============================================================
 # Per-User Deployment (multi-tenant)
 # ============================================================
-# Populate to deploy per-user dice-game instances via ApplicationSet.
-# Each entry generates an isolated namespace: showroom-{name}
-users: []
-# Example: [{name: user1}, {name: user2}, {name: user3}]
+# Set count > 0 to deploy per-user dice-game instances via ApplicationSet.
+# Each user gets an isolated namespace: showroom-{prefix}{n}
+user:
+  count: 0
+  prefix: user
 
 # ============================================================
 # Values injected by field content workload (do not modify)

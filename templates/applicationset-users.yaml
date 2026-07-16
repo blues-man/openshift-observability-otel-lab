@@ -1,4 +1,4 @@
-{{- if .Values.users }}
+{{ if gt (int .Values.user.count) 0 -}}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
@@ -10,18 +10,16 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 spec:
-  goTemplate: true
-  goTemplateOptions:
-    - "missingkey=error"
   generators:
-    - list:
-        elements:
-          {{- range .Values.users }}
-          - name: {{ .name }}
-          {{- end }}
+  - list:
+      elements:
+{{- $userCount := int .Values.user.count }}
+{{- range $index := until $userCount }}
+      - user: {{ $.Values.user.prefix }}{{ add $index 1 }}
+{{- end }}
   template:
     metadata:
-      name: {{ .Release.Name }}-dice-game-{{ "{{.name}}" }}
+      name: {{ .Release.Name }}-dice-game-{{- "{{" }} user {{- "}}" }}
       namespace: {{ .Values.argocd.namespace }}
       labels:
         demo.redhat.com/application: "observability-lab"
@@ -34,10 +32,10 @@ spec:
         targetRevision: {{ .Values.gitops.revision }}
         path: {{ .Values.gitops.basePath }}/components/dice-game
         helm:
-          valuesObject:
+          values: |
             app:
               enabled: {{ .Values.components.diceGame.enabled }}
-              namespace: showroom-{{ "{{.name}}" }}
+              namespace: showroom-{{- "{{" }} user {{- "}}" }}
               frontend: {{ .Values.components.diceGame.frontend | toYaml | nindent 16 }}
               backend1: {{ .Values.components.diceGame.backend1 | toYaml | nindent 16 }}
               backend2: {{ .Values.components.diceGame.backend2 | toYaml | nindent 16 }}
@@ -49,11 +47,17 @@ spec:
               domain: {{ .Values.deployer.domain | quote }}
       destination:
         server: https://kubernetes.default.svc
-        namespace: showroom-{{ "{{.name}}" }}
+        namespace: showroom-{{- "{{" }} user {{- "}}" }}
       syncPolicy:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: 30
+          backoff:
+            duration: "5s"
+            factor: 2
+            maxDuration: "5m"
         syncOptions:
           - CreateNamespace=true
           - ServerSideApply=true
