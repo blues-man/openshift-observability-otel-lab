@@ -11,6 +11,42 @@ include::partial$_attributes.adoc[]
 The full observability stack -- operators, backends, and console integrations -- has been pre-deployed to this cluster via ArgoCD GitOps.
 In this module you will walk through every layer to confirm it is healthy and understand how the pieces connect before you start generating telemetry.
 
+== Getting Started: Log In to OpenShift
+
+Before running any commands in this lab, you need to log in to the OpenShift cluster from the embedded terminal on the right side of the screen.
+
+Run the following command in the terminal:
+
+[source,subs="attributes+",role="execute"]
+----
+{login_command}
+----
+
+You should see output similar to:
+
+----
+Login successful.
+
+You have access to N projects, the list has been suppressed.
+
+Using project "observability-app-userN".
+----
+
+Verify you are connected:
+
+[source,subs="attributes+",role="execute"]
+----
+oc whoami
+----
+
+Expected output:
+
+----
+{user_name}
+----
+
+Once you see your username, you are ready to proceed with the exercises below.
+
 == Exercise 1: Verify Operators
 
 Five operators power the observability stack.
