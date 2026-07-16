@@ -61,14 +61,14 @@ Four policies implement a practical sampling strategy:
 
 === Step 1 -- Apply the tail sampling collector configuration
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc apply -f - <<'EOF'
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
-  name: otel-collector
-  namespace: tutorial-application
+  name: {collector_name}
+  namespace: {tutorial_namespace}
 spec:
   mode: deployment
   config:
@@ -130,13 +130,13 @@ spec:
 
     exporters:
       otlphttp/tempo:
-        endpoint: "https://tempo-simplest-gateway.tempo-observability.svc:8090/api/traces/v1/dev"
+        endpoint: "https://tempo-{tempo_name}-gateway.{tempo_namespace}.svc:8090/api/traces/v1/dev"
         tls:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
         headers:
           Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
       otlphttp/loki:
-        endpoint: "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+        endpoint: "https://{loki_name}-gateway-http.{loki_namespace}.svc:8080/api/logs/v1/application"
         tls:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
         headers:

@@ -53,14 +53,14 @@ The current `Instrumentation` CR has `sampler.argument: "1"` which means 100% of
 
 Apply an updated `Instrumentation` CR that sets `parentbased_traceidratio` with an argument of `0.5`:
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc apply -f - <<'EOF'
 apiVersion: opentelemetry.io/v1alpha1
 kind: Instrumentation
 metadata:
   name: my-instrumentation
-  namespace: tutorial-application
+  namespace: {tutorial_namespace}
 spec:
   propagators:
     - tracecontext
@@ -72,11 +72,11 @@ spec:
   python:
     env:
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: "http://otel-collector.tutorial-application.svc:4318"
+        value: "http://{collector_name}.{tutorial_namespace}.svc:4318"
   nodejs:
     env:
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: "http://otel-collector.tutorial-application.svc:4318"
+        value: "http://{collector_name}.{tutorial_namespace}.svc:4318"
   addK8sUIDAttributes: true
 EOF
 ----
@@ -165,14 +165,14 @@ Before moving to the tail-based sampling module, reset the sampling rate back to
 
 === Step 1 -- Restore Full Sampling
 
-[source,role="execute"]
+[source,subs="attributes+",role="execute"]
 ----
 oc apply -f - <<'EOF'
 apiVersion: opentelemetry.io/v1alpha1
 kind: Instrumentation
 metadata:
   name: my-instrumentation
-  namespace: tutorial-application
+  namespace: {tutorial_namespace}
 spec:
   propagators:
     - tracecontext
@@ -184,11 +184,11 @@ spec:
   python:
     env:
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: "http://otel-collector.tutorial-application.svc:4318"
+        value: "http://{collector_name}.{tutorial_namespace}.svc:4318"
   nodejs:
     env:
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: "http://otel-collector.tutorial-application.svc:4318"
+        value: "http://{collector_name}.{tutorial_namespace}.svc:4318"
   addK8sUIDAttributes: true
 EOF
 ----

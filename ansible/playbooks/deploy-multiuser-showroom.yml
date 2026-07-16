@@ -36,7 +36,7 @@
         showroom_content_git_repo_ref: "{{ content_git_repo_ref }}"
         showroom_user_data:
           cluster_domain: "{{ cluster_domain }}"
-          demo_namespace: "observability-app-{{ item }}"
+          demo_namespace: "showroom-{{ item }}"
           demo_app: dice-game
           ocp_version: "4.22"
           openshift_console_url: "https://console-openshift-console.{{ cluster_domain }}"
@@ -44,7 +44,7 @@
           tempo_namespace: tempo-observability
           loki_namespace: openshift-logging
           coo_namespace: coo-observability
-          tutorial_namespace: "observability-app-{{ item }}"
+          tutorial_namespace: "showroom-{{ item }}"
           user_name: "{{ item }}"
           user_password: "{{ user_password }}"
       loop: "{{ users }}"

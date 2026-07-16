@@ -1,18 +1,18 @@
 // Environment attributes — injected via user_data.yml → antora.yml asciidoc.attributes
 :console_url: {openshift_console_url}
 :api_url: {openshift_api_url}
-ifndef::user_name[:user_name: admin]
+ifndef::user_name[:user_name: user1]
 ifndef::user_password[:user_password: (see lab provisioning)]
 
-// Lab-specific attributes
-:lab_title: OpenShift Observability with OpenTelemetry
-:tutorial_namespace: tutorial-application
-:tempo_namespace: tempo-observability
-:loki_namespace: openshift-logging
-:coo_namespace: coo-observability
-:collector_name: otel-collector
-:tempo_name: simplest
-:loki_name: logging-loki
+// Lab-specific attributes — ifndef guards allow user_data overrides for multi-tenant deployments
+ifndef::tutorial_namespace[:tutorial_namespace: tutorial-application]
+ifndef::tempo_namespace[:tempo_namespace: tempo-observability]
+ifndef::loki_namespace[:loki_namespace: openshift-logging]
+ifndef::coo_namespace[:coo_namespace: coo-observability]
+ifndef::collector_name[:collector_name: otel-collector]
+ifndef::tempo_name[:tempo_name: simplest]
+ifndef::loki_name[:loki_name: logging-loki]
+ifndef::ocp_version[:ocp_version: 4.22]
 
 // Product versions
 :otel_collector_version: 0.147.0

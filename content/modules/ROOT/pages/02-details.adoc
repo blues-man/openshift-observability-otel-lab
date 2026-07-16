@@ -15,10 +15,10 @@ include::partial$_attributes.adoc[]
 | {api_url}
 
 | Username
-| {user}
+| {user_name}
 
 | Password
-| {password}
+| {user_password}
 |===
 
 == Pre-installed Operators
