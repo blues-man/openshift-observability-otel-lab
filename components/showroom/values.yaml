@@ -7,6 +7,11 @@ showroom:
     repoRef: "main"
     antoraPlaybook: "site.yml"
     image: "quay.io/rhpds/showroom-content:v1.3.1"
+  userdata:
+    tutorialNamespace: "tutorial-application"
+    tempoNamespace: "tempo-observability"
+    lokiNamespace: "openshift-logging"
+    cooNamespace: "coo-observability"
   nookbag:
     enabled: false
     bundleUrl: ""

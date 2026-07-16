@@ -88,10 +88,10 @@ data:
     ocp_version: "4.22"
     openshift_console_url: "https://console-openshift-console.{{ .Values.deployer.domain }}"
     openshift_api_url: "https://api.{{ .Values.deployer.domain | trimPrefix "apps." }}:6443"
-    tempo_namespace: "tempo-observability"
-    loki_namespace: "openshift-logging"
-    coo_namespace: "coo-observability"
-    tutorial_namespace: "tutorial-application"
+    tempo_namespace: {{ .Values.showroom.userdata.tempoNamespace | default "tempo-observability" | quote }}
+    loki_namespace: {{ .Values.showroom.userdata.lokiNamespace | default "openshift-logging" | quote }}
+    coo_namespace: {{ .Values.showroom.userdata.cooNamespace | default "coo-observability" | quote }}
+    tutorial_namespace: {{ .Values.showroom.userdata.tutorialNamespace | default "tutorial-application" | quote }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
