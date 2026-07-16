@@ -1,15 +1,16 @@
+{{- $ns := .Values.showroom.namespace | default "showroom" }}
 {{- if and .Values.showroom.enabled (.Values.showroom.consoleEmbed).enabled .Values.deployer.domain }}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: {{ .Values.showroom.name }}-console-embed
-  namespace: {{ .Values.showroom.namespace | default "showroom" }}
+  namespace: {{ $ns }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ .Values.showroom.name }}-console-embed
+  name: {{ $ns }}-console-embed
 rules:
 - apiGroups:
   - operator.openshift.io
@@ -22,15 +23,15 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ .Values.showroom.name }}-console-embed
+  name: {{ $ns }}-console-embed
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ .Values.showroom.name }}-console-embed
+  name: {{ $ns }}-console-embed
 subjects:
 - kind: ServiceAccount
   name: {{ .Values.showroom.name }}-console-embed
-  namespace: {{ .Values.showroom.namespace | default "showroom" }}
+  namespace: {{ $ns }}
 ---
 apiVersion: batch/v1
 kind: Job
