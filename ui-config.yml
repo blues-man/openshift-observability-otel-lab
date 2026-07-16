@@ -13,5 +13,5 @@ tabs:
     url: 'https://console-openshift-console.${DOMAIN}'
 
   - name: Terminal
-    path: /terminal
+    path: /terminal/
     port: 443

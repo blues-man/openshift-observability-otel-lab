@@ -13,6 +13,10 @@ ui:
   bundle:
     url: https://github.com/rhpds/rhdp_showroom_theme/releases/download/latest/ui-bundle.zip
     snapshot: true
+  supplemental_files: ./content/supplemental-ui
+
+runtime:
+  cache_dir: ./.cache/antora
 
 output:
   dir: ./www
