@@ -48,8 +48,9 @@ oc get pods -n $NAMESPACE --kubeconfig $KUBECONFIG_TEST
 ### T1.1: Check operator subscriptions
 
 ```bash
-oc get subscriptions.operators.coreos.com -A --kubeconfig $KUBECONFIG_TEST \
-  | grep -E 'opentelemetry|tempo|loki|cluster-observability|cluster-logging'
+for ns in openshift-opentelemetry-operator openshift-tempo-operator openshift-operators-redhat openshift-cluster-observability-operator openshift-logging; do
+  oc get subscriptions.operators.coreos.com -n $ns --kubeconfig $KUBECONFIG_TEST 2>/dev/null
+done
 ```
 
 **PASS:** 5 subscriptions found (opentelemetry, tempo, loki, cluster-observability, cluster-logging).
@@ -57,9 +58,9 @@ oc get subscriptions.operators.coreos.com -A --kubeconfig $KUBECONFIG_TEST \
 ### T1.2: Check CSVs
 
 ```bash
-oc get csv -A --kubeconfig $KUBECONFIG_TEST \
-  | grep -E 'opentelemetry|tempo|loki|observability|logging' \
-  | grep -v Succeeded
+for ns in openshift-opentelemetry-operator openshift-tempo-operator openshift-operators-redhat openshift-cluster-observability-operator openshift-logging; do
+  oc get csv -n $ns --kubeconfig $KUBECONFIG_TEST 2>/dev/null | grep -E 'opentelemetry|tempo|loki|observability|logging'
+done | grep -v Succeeded
 ```
 
 **PASS:** No output (all CSVs are Succeeded).
@@ -125,13 +126,28 @@ oc get monitoringstack -n $COO_NAMESPACE --kubeconfig $KUBECONFIG_TEST \
 **PASS:** Output contains `enableOtlpHttpReceiver: true` or similar OTLP config.
 **FAIL if:** grep returns empty (case-sensitivity issue in lab content).
 
-### T1.10: UIPlugins registered
+### T1.10: UIPlugins visible in console
+
+UIPlugins are cluster-scoped resources that regular users cannot list directly.
+Verify by checking the OpenShift Console for *Observe -> Traces* and *Observe -> Logs* views.
+
+Alternatively, verify as admin:
 
 ```bash
-oc get uiplugin --kubeconfig $KUBECONFIG_TEST
+oc get uiplugin
 ```
 
-**PASS:** Both `distributed-tracing` and `logging` present.
+**PASS:** Both `distributed-tracing` and `logging` present in the console Observe menu (or in admin output).
+
+### T1.11: Project visibility scoped correctly
+
+```bash
+PROJECT_COUNT=$(oc get projects --kubeconfig $KUBECONFIG_TEST --no-headers | wc -l)
+echo "Visible projects: $PROJECT_COUNT"
+```
+
+**PASS:** User sees <= 10 projects (own namespace, showroom, plus monitoring namespaces).
+**FAIL if:** User sees > 20 projects (cluster-wide RBAC leak — check for `cluster-monitoring-view` ClusterRoleBinding or similar).
 
 ---
 
@@ -244,7 +260,7 @@ echo "HTTP $HTTP_CODE"
 ```
 
 **PASS:** HTTP 200.
-**FAIL if:** HTTP 403 (missing `cluster-monitoring-view` ClusterRole).
+**FAIL if:** HTTP 403 (missing `view` RoleBinding in `openshift-monitoring`).
 
 ### T2.8: Count metrics appear in Prometheus
 
@@ -510,7 +526,7 @@ Cluster:     ____
 User:        ____
 Git commit:  ____
 
-Module 1:  __ / 10 passed
+Module 1:  __ / 11 passed
 Module 2:  __ /  8 passed
 Module 3:  __ /  4 passed
 Module 4:  __ /  4 passed
@@ -518,7 +534,7 @@ Module 5:  __ /  4 passed
 E2E Flow:  __ /  3 passed
 Content:   __ /  4 passed
 --------------------------
-Total:     __ / 37 passed
+Total:     __ / 38 passed
 
 Blocking issues:
   -
