@@ -515,6 +515,30 @@ grep -n 'clusterlogforwarder.*instance' content/modules/ROOT/pages/
 
 **PASS:** No output. Should reference `collector`, not `instance`.
 
+### TC.5: Tempo gateway port is 8080 (HTTP), not 8090 (gRPC)
+
+```bash
+grep -rn '8090/api/traces' content/modules/ROOT/ components/dice-game/
+```
+
+**PASS:** No output. The otlphttp exporter must use port 8080 (HTTP), not 8090 (gRPC).
+
+### TC.6: Loki OTLP path includes /otlp segment
+
+```bash
+grep -rn 'endpoint.*api/logs/v1/application"' content/modules/ROOT/ components/dice-game/
+```
+
+**PASS:** No output. All Loki endpoints must end with `/application/otlp"` so the exporter auto-appends `/v1/logs` to the correct OTLP ingest path.
+
+### TC.7: No traces_endpoint or logs_endpoint in exporter config
+
+```bash
+grep -rn 'traces_endpoint\|logs_endpoint' content/modules/ROOT/ components/dice-game/
+```
+
+**PASS:** No output. Use `endpoint:` and let the exporter auto-append `/v1/traces` or `/v1/logs`.
+
 ---
 
 ## Summary Template
@@ -532,9 +556,9 @@ Module 3:  __ /  4 passed
 Module 4:  __ /  4 passed
 Module 5:  __ /  4 passed
 E2E Flow:  __ /  3 passed
-Content:   __ /  4 passed
+Content:   __ /  7 passed
 --------------------------
-Total:     __ / 38 passed
+Total:     __ / 41 passed
 
 Blocking issues:
   -
