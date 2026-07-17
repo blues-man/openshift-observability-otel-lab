@@ -56,34 +56,43 @@ Confirm that each Subscription exists and that every ClusterServiceVersion has r
 
 [source,role="execute"]
 ----
-oc get subscriptions.operators.coreos.com -A | grep -E 'opentelemetry|tempo|loki|cluster-observability|cluster-logging'
+for ns in openshift-opentelemetry-operator openshift-tempo-operator openshift-operators-redhat openshift-cluster-observability-operator openshift-logging; do
+  oc get subscriptions.operators.coreos.com -n $ns 2>/dev/null
+done
 ----
 
 You should see output similar to:
 
 ----
-openshift-opentelemetry-operator   opentelemetry-product   stable          ...
-openshift-tempo-operator           tempo-product           stable          ...
-openshift-loki-operator            loki-operator           stable-6.2      ...
-openshift-cluster-observability    cluster-observability   stable          ...
-openshift-logging                  cluster-logging         stable-6.1      ...
+NAME                       PACKAGE                       CHANNEL   ...
+opentelemetry-product      opentelemetry-product         stable    ...
+NAME                       PACKAGE                       CHANNEL   ...
+tempo-product              tempo-product                 stable    ...
+NAME                       PACKAGE                       CHANNEL   ...
+loki-operator              loki-operator                 stable-6.5 ...
+NAME                       PACKAGE                       CHANNEL   ...
+cluster-observability-operator  cluster-observability-operator  stable ...
+NAME                       PACKAGE                       CHANNEL   ...
+cluster-logging            cluster-logging               stable-6.5 ...
 ----
 
 === Step 2 -- Check CSVs
 
 [source,role="execute"]
 ----
-oc get csv -A | grep -E 'opentelemetry|tempo|loki|observability|logging'
+for ns in openshift-opentelemetry-operator openshift-tempo-operator openshift-operators-redhat openshift-cluster-observability-operator openshift-logging; do
+  oc get csv -n $ns 2>/dev/null | grep -E 'opentelemetry|tempo|loki|observability|logging'
+done
 ----
 
 Every CSV should show *Succeeded* in the `PHASE` column:
 
 ----
-openshift-opentelemetry-operator   opentelemetry-operator.v...   Succeeded
-openshift-tempo-operator           tempo-operator.v...           Succeeded
-openshift-loki-operator            loki-operator.v...            Succeeded
-openshift-cluster-observability    cluster-observability...      Succeeded
-openshift-logging                  cluster-logging.v...          Succeeded
+opentelemetry-operator.v...   Succeeded
+tempo-operator.v...           Succeeded
+loki-operator.v...            Succeeded
+cluster-observability...      Succeeded
+cluster-logging.v...          Succeeded
 ----
 
 === What each operator provides

@@ -2,35 +2,6 @@
 {{- if .Values.app.user }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: observability-viewer-{{ .Values.app.namespace }}
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
-rules:
-  - apiGroups: ["operators.coreos.com"]
-    resources: ["subscriptions", "clusterserviceversions"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["observability.openshift.io"]
-    resources: ["uiplugins"]
-    verbs: ["get", "list", "watch"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: observability-viewer-{{ .Values.app.namespace }}
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: observability-viewer-{{ .Values.app.namespace }}
-subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: User
-  name: {{ .Values.app.user }}
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: {{ .Values.app.user }}-viewer
@@ -134,21 +105,6 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: view
-subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: User
-  name: {{ .Values.app.user }}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: monitoring-metrics-viewer-{{ .Values.app.namespace }}
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-monitoring-view
 subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: User
