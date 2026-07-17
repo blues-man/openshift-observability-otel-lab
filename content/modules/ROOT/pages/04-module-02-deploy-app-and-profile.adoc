@@ -40,7 +40,7 @@ frontend         1/1     1            1           10m
 backend1         1/1     1            1           10m
 backend2         1/1     1            1           10m
 backend3         1/1     1            1           10m
-loadgenerator    1/1     1            1           10m
+loadgen          1/1     1            1           10m
 ----
 
 Confirm that all pods are in a *Running* state:
@@ -326,7 +326,7 @@ The OpenTelemetry Operator will reconcile the updated CR and restart the Collect
 
 [source,subs="attributes+",role="execute"]
 ----
-oc rollout status deployment/{collector_name} -n {tutorial_namespace}
+oc rollout status deployment/{collector_name}-collector -n {tutorial_namespace}
 ----
 
 You should see:

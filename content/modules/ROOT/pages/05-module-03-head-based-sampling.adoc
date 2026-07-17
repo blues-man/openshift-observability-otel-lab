@@ -72,11 +72,11 @@ spec:
   python:
     env:
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: "http://{collector_name}.{tutorial_namespace}.svc:4318"
+        value: "http://{collector_name}-collector.{tutorial_namespace}.svc:4318"
   nodejs:
     env:
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: "http://{collector_name}.{tutorial_namespace}.svc:4318"
+        value: "http://{collector_name}-collector.{tutorial_namespace}.svc:4318"
   addK8sUIDAttributes: true
 EOF
 ----
@@ -184,11 +184,11 @@ spec:
   python:
     env:
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: "http://{collector_name}.{tutorial_namespace}.svc:4318"
+        value: "http://{collector_name}-collector.{tutorial_namespace}.svc:4318"
   nodejs:
     env:
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: "http://{collector_name}.{tutorial_namespace}.svc:4318"
+        value: "http://{collector_name}-collector.{tutorial_namespace}.svc:4318"
   addK8sUIDAttributes: true
 EOF
 ----

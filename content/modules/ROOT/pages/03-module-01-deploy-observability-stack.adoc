@@ -184,15 +184,15 @@ oc get clusterlogforwarder -n {loki_namespace}
 ----
 
 ----
-NAME       AGE
-instance   ...
+NAME        AGE
+collector   ...
 ----
 
 View its configuration:
 
 [source,subs="attributes+",role="execute"]
 ----
-oc get clusterlogforwarder instance -n {loki_namespace} -o yaml | head -40
+oc get clusterlogforwarder collector -n {loki_namespace} -o yaml | head -40
 ----
 
 Key things to notice in the output:
@@ -244,25 +244,21 @@ oc get monitoringstack -n {coo_namespace}
 ----
 
 ----
-NAME                 AGE
-monitoringstack-sample   ...
+NAME                AGE
+coo-observability   ...
 ----
 
 Inspect its specification:
 
 [source,subs="attributes+",role="execute"]
 ----
-oc get monitoringstack -n {coo_namespace} -o yaml | grep -A5 otlp
+oc get monitoringstack coo-observability -n {coo_namespace} -o yaml | grep -i -A2 otlp
 ----
 
 You should see an OTLP HTTP receiver enabled in the MonitoringStack spec:
 
 ----
-    prometheusConfig:
-      otlpConfig:
-        receiverConfig:
-          otlpHTTPConfig:
-            enabled: true
+    enableOtlpHttpReceiver: true
 ----
 
 [TIP]

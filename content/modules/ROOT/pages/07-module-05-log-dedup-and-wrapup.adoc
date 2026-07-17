@@ -103,7 +103,7 @@ spec:
         headers:
           Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
       otlphttp/metrics:
-        endpoint: "http://monitoringstack-sample.{coo_namespace}.svc:9090/api/v1/otlp"
+        endpoint: "http://coo-observability-prometheus.{coo_namespace}.svc:9090/api/v1/otlp"
         tls:
           insecure: true
 
@@ -127,7 +127,7 @@ EOF
 Expected output:
 
 ----
-opentelemetrycollector.opentelemetry.io/otel-collector configured
+opentelemetrycollector.opentelemetry.io/otel configured
 ----
 
 Notice the logs pipeline order: `otlp -> memory_limiter -> filter/drop-debug-logs -> filter/drop-large-logs -> logdedup -> batch -> otlphttp/loki`.
@@ -137,7 +137,7 @@ The deduplication processor sits after filtering (so it only deduplicates logs w
 
 [source,subs="attributes+",role="execute"]
 ----
-oc rollout status deployment/otel-collector -n {tutorial_namespace}
+oc rollout status deployment/{collector_name}-collector -n {tutorial_namespace}
 ----
 
 Expected output:

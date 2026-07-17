@@ -180,7 +180,7 @@ Notice the key differences from the previous collector configuration:
 
 [source,subs="attributes+",role="execute"]
 ----
-oc rollout status deployment/otel-collector -n {tutorial_namespace}
+oc rollout status deployment/{collector_name}-collector -n {tutorial_namespace}
 ----
 
 ----
@@ -243,7 +243,10 @@ Query them from the collector:
 
 [source,subs="attributes+",role="execute"]
 ----
-oc exec -n {tutorial_namespace} deployment/otel-collector -- curl -s localhost:8888/metrics | grep tail_sampling
+oc port-forward -n {tutorial_namespace} deployment/{collector_name}-collector 18888:8888 &
+sleep 2
+curl -s localhost:18888/metrics | grep tail_sampling | grep -v '^#' | grep -v '_bucket{'
+kill %1 2>/dev/null
 ----
 
 Key metrics to look for in the output:

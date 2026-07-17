@@ -115,7 +115,7 @@ subjects:
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
-  name: otel-collector
+  name: otel
   namespace: {{ .Values.app.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "1"
@@ -140,13 +140,18 @@ spec:
         limit_mib: 4000
         spike_limit_mib: 800
     exporters:
-      otlp/tempo:
-        endpoint: "https://tempo-simplest-gateway.tempo-observability.svc:8090"
+      otlphttp/tempo:
+        endpoint: "https://tempo-simplest-gateway.{{ .Values.app.observabilityViewer.tempoNamespace | default "tempo-observability" }}.svc:8090/api/traces/v1/dev"
         tls:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
         headers:
           Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
-          X-Scope-OrgID: "dev"
+      otlphttp/loki:
+        endpoint: "https://{{ .Values.app.observabilityViewer.lokiName | default "logging-loki" }}-gateway-http.{{ .Values.app.observabilityViewer.lokiNamespace | default "openshift-logging" }}.svc:8080/api/logs/v1/application"
+        tls:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+        headers:
+          Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
       debug:
         verbosity: basic
     service:
@@ -154,7 +159,11 @@ spec:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [otlp/tempo, debug]
+          exporters: [otlphttp/tempo, debug]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp/loki, debug]
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, batch]
