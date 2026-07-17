@@ -130,13 +130,13 @@ spec:
 
     exporters:
       otlphttp/tempo:
-        traces_endpoint: "https://tempo-{tempo_name}-gateway.{tempo_namespace}.svc:8090/api/traces/v1/dev"
+        endpoint: "https://tempo-{tempo_name}-gateway.{tempo_namespace}.svc:8080/api/traces/v1/dev"
         tls:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
         headers:
           Authorization: "Bearer ${file:/var/run/secrets/kubernetes.io/serviceaccount/token}"
       otlphttp/loki:
-        logs_endpoint: "https://{loki_name}-gateway-http.{loki_namespace}.svc:8080/api/logs/v1/application"
+        endpoint: "https://{loki_name}-gateway-http.{loki_namespace}.svc:8080/api/logs/v1/application/otlp"
         tls:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
         headers:
