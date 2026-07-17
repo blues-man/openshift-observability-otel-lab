@@ -279,24 +279,8 @@ The OTLP HTTP receiver lets the OpenTelemetry Collector push metrics directly to
 
 The Cluster Observability Operator registers *UIPlugins* that add observability views to the OpenShift Console.
 
-=== Step 1 -- List UIPlugins
-
-[source,role="execute"]
-----
-oc get uiplugin
-----
-
-Expected output:
-
-----
-NAME             AGE
-logging          ...
-distributed-tracing   ...
-----
-
-These plugins inject the *Observe -> Logs* and *Observe -> Traces* pages into the console.
-
-=== Step 2 -- Explore the Console
+The UIPlugins are cluster-scoped resources managed by the Cluster Observability Operator.
+You can confirm they are active by opening the OpenShift Console and checking for the integrated observability views.
 
 Open the OpenShift Console at:
 
@@ -304,15 +288,17 @@ Open the OpenShift Console at:
 
 Navigate to each of the integrated observability views:
 
-. *Observe -> Logs* -- powered by the LokiStack integration.
+. *Observe -> Logs* -- powered by the LokiStack UIPlugin integration.
 Browse application and infrastructure logs using LogQL queries.
 
-. *Observe -> Traces* -- powered by the TempoStack integration.
+. *Observe -> Traces* -- powered by the TempoStack UIPlugin integration.
 Search for traces by service name, operation, duration, or trace ID.
 
 image::console-observe-traces-placeholder.png[OpenShift Console - Observe Traces view,link=self,window=blank]
 
 image::console-observe-logs-placeholder.png[OpenShift Console - Observe Logs view,link=self,window=blank]
+
+If these views appear under *Observe*, the `logging` and `distributed-tracing` UIPlugins are working correctly.
 
 [NOTE]
 ====
