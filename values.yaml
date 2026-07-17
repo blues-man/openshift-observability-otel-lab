@@ -110,6 +110,13 @@ components:
       enabled: true
       title: "OpenShift Observability with OpenTelemetry"
 
+  # --- Workshop Deployer (user assignment page) ---
+  workshopDeployer:
+    enabled: true
+    namespace: workshop-deployer
+    title: "OpenShift Observability with OpenTelemetry"
+    password: "openshift"
+
   # --- Showroom Lab Guide ---
   showroom:
     enabled: true

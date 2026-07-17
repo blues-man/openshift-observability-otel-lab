@@ -113,6 +113,48 @@ spec:
       - ServerSideApply=true
 {{- end }}
 
+{{- if and .Values.components.workshopDeployer.enabled (gt (int .Values.user.count) 0) }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Release.Name }}-workshop-deployer
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    demo.redhat.com/application: "observability-lab"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: {{ .Values.argocd.project }}
+  source:
+    repoURL: {{ .Values.gitops.repoUrl }}
+    targetRevision: {{ .Values.gitops.revision }}
+    path: {{ .Values.gitops.basePath }}/components/workshop-deployer
+    helm:
+      valuesObject:
+        workshop:
+          enabled: true
+          namespace: {{ .Values.components.workshopDeployer.namespace }}
+          title: {{ .Values.components.workshopDeployer.title | quote }}
+          password: {{ .Values.components.workshopDeployer.password | quote }}
+          userCount: {{ .Values.user.count }}
+          userPrefix: {{ .Values.user.prefix | quote }}
+          showroomNamePrefix: "showroom-showroom"
+        deployer:
+          domain: {{ .Values.deployer.domain | quote }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.components.workshopDeployer.namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+{{- end }}
+
 {{- if .Values.components.showroom.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1

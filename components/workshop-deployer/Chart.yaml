@@ -1,0 +1,5 @@
+apiVersion: v2
+name: workshop-deployer
+description: Workshop user-assignment webapp for multi-tenant showroom labs
+version: 0.1.0
+type: application

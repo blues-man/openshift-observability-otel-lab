@@ -1,0 +1,320 @@
+{{- if .Values.workshop.enabled }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.workshop.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workshop-app
+  namespace: {{ .Values.workshop.namespace }}
+data:
+  server.py: |
+    import http.server
+    import json
+    import os
+    import threading
+    import urllib.parse
+    import hashlib
+
+    TITLE = os.environ.get("WORKSHOP_TITLE", "Workshop")
+    PASSWORD = os.environ.get("WORKSHOP_PASSWORD", "openshift")
+    USER_COUNT = int(os.environ.get("WORKSHOP_USER_COUNT", "5"))
+    USER_PREFIX = os.environ.get("WORKSHOP_USER_PREFIX", "user")
+    SHOWROOM_PREFIX = os.environ.get("WORKSHOP_SHOWROOM_PREFIX", "showroom-showroom")
+    APPS_DOMAIN = os.environ.get("WORKSHOP_APPS_DOMAIN", "apps.example.com")
+
+    lock = threading.Lock()
+    assignments = {}
+    next_slot = [1]
+
+    def assign_user(email):
+        with lock:
+            email_lower = email.strip().lower()
+            if email_lower in assignments:
+                return assignments[email_lower]
+            if next_slot[0] > USER_COUNT:
+                return None
+            slot = next_slot[0]
+            next_slot[0] += 1
+            user_id = f"{USER_PREFIX}{slot}"
+            url = f"https://{SHOWROOM_PREFIX}-{user_id}.{APPS_DOMAIN}"
+            assignments[email_lower] = {
+                "slot": slot,
+                "user_id": user_id,
+                "url": url,
+                "password": PASSWORD,
+            }
+            return assignments[email_lower]
+
+    INDEX_HTML = """<!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>""" + TITLE + """</title>
+    <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Red Hat Display', 'Segoe UI', system-ui, sans-serif; background: #f0f0f0; min-height: 100vh; display: flex; flex-direction: column; }
+    .header { background: #151515; padding: 16px 32px; display: flex; align-items: center; gap: 16px; }
+    .header svg { height: 36px; }
+    .header .title { color: #fff; font-size: 14px; font-weight: 400; opacity: 0.8; }
+    .main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); padding: 48px; max-width: 480px; width: 100%; }
+    .card h1 { font-size: 24px; font-weight: 700; color: #151515; margin-bottom: 8px; }
+    .card p.sub { color: #6a6e73; font-size: 14px; margin-bottom: 32px; }
+    .field { margin-bottom: 20px; }
+    .field label { display: block; font-size: 14px; font-weight: 600; color: #151515; margin-bottom: 6px; }
+    .field input { width: 100%; padding: 10px 12px; border: 1px solid #d2d2d2; border-radius: 4px; font-size: 16px; outline: none; transition: border-color 0.2s; }
+    .field input:focus { border-color: #06c; box-shadow: 0 0 0 1px #06c; }
+    .btn { display: block; width: 100%; padding: 12px; background: #ee0000; color: #fff; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn:hover { background: #c00; }
+    .btn:disabled { background: #d2d2d2; cursor: not-allowed; }
+    .error { color: #c9190b; font-size: 14px; margin-top: 8px; display: none; }
+    .footer { background: #151515; color: #d2d2d2; text-align: center; padding: 16px; font-size: 12px; }
+    .result { display: none; }
+    .result .lab-url { display: block; background: #f0f0f0; border: 2px solid #06c; border-radius: 8px; padding: 20px; margin: 16px 0; text-align: center; }
+    .result .lab-url a { color: #06c; font-size: 18px; font-weight: 600; text-decoration: none; }
+    .result .lab-url a:hover { text-decoration: underline; }
+    .result .creds { background: #fafafa; border-radius: 4px; padding: 16px; margin-top: 12px; }
+    .result .creds p { font-size: 14px; color: #151515; margin-bottom: 4px; }
+    .result .creds code { background: #e0e0e0; padding: 2px 6px; border-radius: 2px; font-size: 14px; }
+    .launch-btn { margin-top: 20px; background: #06c; }
+    .launch-btn:hover { background: #004080; }
+    </style>
+    </head>
+    <body>
+    <div class="header">
+      <svg viewBox="0 0 613 145" xmlns="http://www.w3.org/2000/svg">
+        <path d="M127.47 83.49c12.51 0 20.13-6.7 20.13-17.61 0-12.07-7.25-17.61-20.86-17.61H115.1V83.49h12.37zm-32.37-55h35.59c23.5 0 39.87 12.06 39.87 35.13 0 19.75-14.29 35.14-38.16 35.14h-17.3v37.88H95.1V28.49zm76.49 90.49c10.48 0 16.87-7.25 16.87-18.79 0-11.53-7.25-19.3-17.3-19.3-10.07 0-17 7.28-17 19.3.01 11.96 6.82 18.79 17.43 18.79zm-36.6-18.79c0-27.16 17.24-42.73 39.43-42.73 21.88 0 35.26 15.57 35.26 42.73 0 25.89-14.56 42.73-37.46 42.73-22.59 0-37.23-16.12-37.23-42.73zm115.29 33.26c-7.63 5.53-17.3 9-27.76 9-22.09 0-37.18-15.57-37.18-42.46 0-25.66 15-43 38.88-43 10 0 18.58 3.49 25.84 8.81l-11.06 17.21c-4.65-4.17-9.57-6.34-15.67-6.34-10.49 0-17.91 7.28-17.91 22.28 0 12.76 6.42 21.22 18.42 21.22 6.41 0 11.76-3.22 16.11-7.59zm19.09-67.2h21.09v7.26c5.49-5 12.73-9.74 22.27-9.74 17.73 0 25.42 12.07 25.42 30.37v43.5h-21.09v-38.62c0-11.33-3.86-14.63-10.77-14.63-6.23 0-11.33 3.86-15.83 8.34v44.91h-21.09zm84.06 37.22v-9.38c3.5-3.3 9.38-7.86 19.61-7.86 6.95 0 10.38 3.16 10.38 8.68v8.56zm-20.09 23.71c9.75 5.53 19.43 9 29.91 9 8.37 0 13.31-3.5 13.31-9.31 0-5.14-3.5-7.7-13-9.38l-8.86-1.55c-17.64-3.11-28.28-10.76-28.28-26.16 0-17.24 14.45-28.47 35.17-28.47 12.53 0 22.83 3.3 30.76 7.94l-9.75 16.11c-7.28-4.33-15.1-6.69-22-6.69-7.09 0-11.76 3.48-11.76 8.87 0 4.45 3.48 7 12.37 8.57l9.06 1.55c19.45 3.3 28.65 12.3 28.65 26.16 0 17.63-15.45 28.47-35.89 28.47-14.46 0-27.38-4.68-37.25-11.53zm151.49-23.71v-9.38c3.48-3.3 9.37-7.86 19.59-7.86 6.96 0 10.38 3.16 10.38 8.68v8.56zm51.31 9.47c0 10.76-4.65 19.61-12 24.74-7.15 5-16.74 7.44-28.2 7.44-16.44 0-31.58-5.53-40.58-11.53l10.18-16.74c8 5.53 19.42 9 29.9 9 8.37 0 13.31-3.5 13.31-9.31 0-5.14-3.49-7.7-13-9.38l-8.86-1.55c-17.63-3.11-28.27-10.76-28.27-26.16 0-17.24 14.46-28.47 35.17-28.47 12.52 0 22.82 3.3 30.75 7.94l-9.75 16.11c-7.28-4.33-15.09-6.69-21.95-6.69-7.09 0-11.76 3.48-11.76 8.87 0 4.45 3.48 7 12.37 8.57l9 1.55c13.48 2.34 23.26 8.47 27.1 18.5.26.77.5 1.62.7 2.51.25 1.16.42 2.41.52 3.74.05.87.07 1.78.07 2.73v-.07z" fill="#e00"/>
+        <text x="115" y="140" fill="#fff" font-size="14" font-family="Red Hat Display,sans-serif" font-weight="400">Demo Platform</text>
+      </svg>
+      <span class="title">Workshop</span>
+    </div>
+    <div class="main">
+      <div class="card">
+        <div id="login-form">
+          <h1>WORKSHOP_TITLE_PLACEHOLDER</h1>
+          <p class="sub">Enter your email and password to access your lab environment.</p>
+          <form onsubmit="return doLogin(event)">
+            <div class="field">
+              <label for="email">Email address</label>
+              <input type="email" id="email" required placeholder="you@example.com" autocomplete="email">
+            </div>
+            <div class="field">
+              <label for="password">Password</label>
+              <input type="password" id="password" required placeholder="Password" autocomplete="current-password">
+            </div>
+            <div class="error" id="error-msg"></div>
+            <button type="submit" class="btn" id="submit-btn">Join Workshop</button>
+          </form>
+        </div>
+        <div class="result" id="result">
+          <h1>Your Lab is Ready</h1>
+          <p class="sub">You have been assigned to the lab environment below.</p>
+          <div class="lab-url">
+            <a id="lab-link" href="#" target="_blank"></a>
+          </div>
+          <div class="creds">
+            <p><strong>OpenShift Credentials</strong></p>
+            <p>Username: <code id="r-user"></code></p>
+            <p>Password: <code id="r-pass"></code></p>
+          </div>
+          <button class="btn launch-btn" onclick="window.open(document.getElementById('lab-link').href,'_blank')">Launch Lab</button>
+        </div>
+      </div>
+    </div>
+    <div class="footer">Red Hat Demo Platform &mdash; Workshop Assignment</div>
+    <script>
+    function doLogin(e) {
+      e.preventDefault();
+      var em = document.getElementById('email').value;
+      var pw = document.getElementById('password').value;
+      var btn = document.getElementById('submit-btn');
+      var err = document.getElementById('error-msg');
+      err.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Assigning...';
+      fetch('/api/assign', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: em, password: pw})
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.error) {
+          err.textContent = d.error;
+          err.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Join Workshop';
+        } else {
+          document.getElementById('login-form').style.display = 'none';
+          document.getElementById('result').style.display = 'block';
+          document.getElementById('lab-link').href = d.url;
+          document.getElementById('lab-link').textContent = d.url;
+          document.getElementById('r-user').textContent = d.user_id;
+          document.getElementById('r-pass').textContent = d.password;
+        }
+      })
+      .catch(function() {
+        err.textContent = 'Something went wrong. Please try again.';
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Join Workshop';
+      });
+      return false;
+    }
+    </script>
+    </body>
+    </html>""".replace("WORKSHOP_TITLE_PLACEHOLDER", TITLE)
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def log_message(self, fmt, *args):
+            pass
+
+        def do_GET(self):
+            if self.path == "/healthz":
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"ok")
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(INDEX_HTML.encode())
+
+        def do_POST(self):
+            if self.path != "/api/assign":
+                self.send_response(404)
+                self.end_headers()
+                return
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
+            try:
+                data = json.loads(body)
+            except Exception:
+                self._json_response(400, {"error": "Invalid request"})
+                return
+            email = data.get("email", "").strip()
+            password = data.get("password", "").strip()
+            if not email:
+                self._json_response(400, {"error": "Email is required"})
+                return
+            if password != PASSWORD:
+                self._json_response(401, {"error": "Invalid password"})
+                return
+            result = assign_user(email)
+            if result is None:
+                self._json_response(409, {"error": "All lab environments are assigned. Please contact the workshop organizer."})
+                return
+            self._json_response(200, result)
+
+        def _json_response(self, code, obj):
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(obj).encode())
+
+    if __name__ == "__main__":
+        port = int(os.environ.get("PORT", "8080"))
+        server = http.server.HTTPServer(("0.0.0.0", port), Handler)
+        print(f"Workshop deployer listening on :{port}")
+        print(f"  Title: {TITLE}")
+        print(f"  Users: {USER_COUNT} ({USER_PREFIX}1..{USER_PREFIX}{USER_COUNT})")
+        print(f"  Domain: {APPS_DOMAIN}")
+        server.serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workshop-deployer
+  namespace: {{ .Values.workshop.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workshop-deployer
+  template:
+    metadata:
+      labels:
+        app: workshop-deployer
+    spec:
+      containers:
+        - name: workshop-deployer
+          image: registry.access.redhat.com/ubi9/python-312:latest
+          command: ["python3", "/app/server.py"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: WORKSHOP_TITLE
+              value: {{ .Values.workshop.title | quote }}
+            - name: WORKSHOP_PASSWORD
+              value: {{ .Values.workshop.password | quote }}
+            - name: WORKSHOP_USER_COUNT
+              value: {{ .Values.workshop.userCount | quote }}
+            - name: WORKSHOP_USER_PREFIX
+              value: {{ .Values.workshop.userPrefix | quote }}
+            - name: WORKSHOP_SHOWROOM_PREFIX
+              value: {{ .Values.workshop.showroomNamePrefix | quote }}
+            - name: WORKSHOP_APPS_DOMAIN
+              value: {{ .Values.deployer.domain | quote }}
+          volumeMounts:
+            - name: app
+              mountPath: /app
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+      volumes:
+        - name: app
+          configMap:
+            name: workshop-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workshop-deployer
+  namespace: {{ .Values.workshop.namespace }}
+spec:
+  selector:
+    app: workshop-deployer
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: workshop
+  namespace: {{ .Values.workshop.namespace }}
+spec:
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  to:
+    kind: Service
+    name: workshop-deployer
+    weight: 100
+  port:
+    targetPort: 8080
+{{- end }}

@@ -1,0 +1,11 @@
+workshop:
+  enabled: true
+  namespace: workshop-deployer
+  title: "OpenShift Observability with OpenTelemetry"
+  password: "openshift"
+  userCount: 5
+  userPrefix: "user"
+  showroomNamePrefix: "showroom-showroom"
+
+deployer:
+  domain: ""
