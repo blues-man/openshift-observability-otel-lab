@@ -25,7 +25,7 @@ A load generator sends continuous traffic so you always have fresh telemetry to 
 
 === Check Deployments and Pods
 
-Verify that all components are running:
+Verify that all components are running from *Terminal*:
 
 [source,subs="attributes+",role="execute"]
 ----
@@ -49,6 +49,10 @@ Confirm that all pods are in a *Running* state:
 ----
 oc get pods -n {tutorial_namespace}
 ----
+
+You can check it also through OpenShift Web Console, go to *Workloads*->*Topology*:
+
+image::console-topology.png[OpenShift Console - Topology,link=self,window=blank]
 
 === Inspect the Instrumentation CR
 

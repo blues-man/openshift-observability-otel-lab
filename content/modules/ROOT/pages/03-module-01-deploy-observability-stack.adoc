@@ -41,6 +41,7 @@ oc whoami
 
 Expected output:
 
+[source,bash,subs="attributes+"]
 ----
 {user_name}
 ----
@@ -294,9 +295,10 @@ Browse application and infrastructure logs using LogQL queries.
 . *Observe -> Traces* -- powered by the TempoStack UIPlugin integration.
 Search for traces by service name, operation, duration, or trace ID.
 
-image::console-observe-traces-placeholder.png[OpenShift Console - Observe Traces view,link=self,window=blank]
+image::console-observe-logs.png[OpenShift Console - Observe Logs view,link=self,window=blank]
 
-image::console-observe-logs-placeholder.png[OpenShift Console - Observe Logs view,link=self,window=blank]
+image::console-observe-traces.png[OpenShift Console - Observe Traces view,link=self,window=blank]
+
 
 If these views appear under *Observe*, the `logging` and `distributed-tracing` UIPlugins are working correctly.
 
