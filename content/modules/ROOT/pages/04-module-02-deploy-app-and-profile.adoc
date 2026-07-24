@@ -264,11 +264,19 @@ spec:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, filter/drop-health-spans, batch]
-          exporters: [otlphttp/tempo, count, debug]
+          exporters: [otlphttp/tempo, debug]
+        traces/profile:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [count]
         logs:
           receivers: [otlp]
           processors: [memory_limiter, filter/drop-debug-logs, filter/drop-large-logs, batch]
-          exporters: [otlphttp/loki, count, debug]
+          exporters: [otlphttp/loki, debug]
+        logs/profile:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [count]
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, batch]
@@ -317,6 +325,8 @@ The updated configuration adds three key components to the Collector pipeline:
 * `filter/drop-large-logs` -- drops log records with body exceeding 1000 bytes.
 
 * `filter/drop-health-spans` -- drops spans from `/health` endpoints.
+
+*Pipeline fan-out* -- the `traces/profile` and `logs/profile` pipelines send _unfiltered_ data to the count connector so it can measure everything, including the noise the filters will drop. The main `traces` and `logs` pipelines apply the filters before sending to the storage backends. This way you can see exactly how much data the filters remove.
 
 *Prometheus exporter* -- exposes count metrics on port 8889.
 
