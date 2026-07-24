@@ -106,7 +106,7 @@ Before profiling, confirm that telemetry data is actually arriving in the backen
 
 . Navigate to *Observe -> Traces* in the left menu.
 
-. In the service dropdown, search for services from the dice game (for example `frontend` or `backend1`).
+. In the service dropdown, search for services from the dice game (for example `frontend` or `backend3`).
 
 . Select a trace to see its full span waterfall -- you should see calls from the frontend fanning out to the backend services.
 

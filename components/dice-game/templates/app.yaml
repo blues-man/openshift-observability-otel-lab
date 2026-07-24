@@ -76,6 +76,9 @@ spec:
           image: {{ .Values.app.backend1.image }}
           ports:
             - containerPort: 5000
+          env:
+            - name: OTEL_INSTRUMENTATION_ENABLED
+              value: "true"
 ---
 apiVersion: v1
 kind: Service
