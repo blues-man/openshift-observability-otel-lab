@@ -102,7 +102,7 @@ Before profiling, confirm that telemetry data is actually arriving in the backen
 
 === View Traces
 
-. Open the OpenShift Console at `{console_url}`.
+. Switch to the *OCP Console* tab on the right side of this tutorial window.
 
 . Navigate to *Observe -> Traces* in the left menu.
 
@@ -110,7 +110,7 @@ Before profiling, confirm that telemetry data is actually arriving in the backen
 
 . Select a trace to see its full span waterfall -- you should see calls from the frontend fanning out to the backend services.
 
-image::traces-view-placeholder.png[Trace waterfall showing frontend calling backend services,link=self,window=blank,width=700,title="Trace waterfall from the dice game application"]
+image::console-observe-traces-detail.png[OpenShift Console - Observe Traces view,link=self,window=blank]
 
 === View Logs
 
@@ -143,7 +143,7 @@ Before you can optimize telemetry, you need to understand what is flowing throug
 
 === Apply the Profiling Collector Configuration
 
-Apply the updated Collector configuration that adds the count connector and filter processors. Paste the following into your terminal:
+Apply the updated Collector configuration that adds the count connector and filter processors. Switch to the *Terminal* tab and paste the following:
 
 [source,subs="attributes+",role="execute"]
 ----
@@ -345,7 +345,7 @@ With the count connector active, the Collector is now generating metrics about t
 
 === Query Count Metrics
 
-. In the OpenShift Console, navigate to *Observe -> Metrics*.
+. Switch to the *OCP Console* tab and navigate to *Observe -> Metrics*.
 
 . Enter the following PromQL queries one at a time to understand the telemetry profile.
 
@@ -357,6 +357,7 @@ telemetry_spans_count_total
 ----
 
 This shows how many non-health-check spans each service generates. Compare the rates across `frontend`, `backend1`, `backend2`, and `backend3`.
+
 
 *Health check spans being filtered:*
 
@@ -385,7 +386,8 @@ telemetry_logs_large_count_total
 
 Log records larger than 1000 bytes are often stack traces or serialized objects that inflate storage costs. The filter processor drops these before they reach LokiStack.
 
-image::profiling-metrics-placeholder.png[Prometheus metrics showing telemetry counts per service,link=self,window=blank,width=700,title="Count connector metrics in the OpenShift Console"]
+image::console-observe-metrics-1.png[OpenShift Console - Observe Metrics,link=self,window=blank]
+
 
 === Interpret the Results
 

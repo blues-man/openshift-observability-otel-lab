@@ -61,6 +61,8 @@ Four policies implement a practical sampling strategy:
 
 === Step 1 -- Apply the tail sampling collector configuration
 
+Switch to the *Terminal* tab and apply the configuration:
+
 [source,subs="attributes+",role="execute"]
 ----
 oc apply -f - <<'EOF'
@@ -221,7 +223,7 @@ Give the application a minute to generate fresh traces under the new sampling co
 
 === Step 1 -- Browse traces in the console
 
-Open the OpenShift Console and navigate to *Observe -> Traces*.
+Switch to the *OCP Console* tab and navigate to *Observe -> Traces*.
 
 Search for traces from your application services.
 Compare what you see now with the unsampled or head-sampled trace volume from earlier modules:
@@ -239,7 +241,7 @@ image::tail-sampling-traces-filtered-placeholder.png[Traces view showing tail-sa
 === Step 2 -- Check tail sampling metrics
 
 The tail sampling processor exposes internal metrics about its decisions.
-Query them from the collector:
+Switch to the *Terminal* tab and query them from the collector:
 
 [source,subs="attributes+",role="execute"]
 ----

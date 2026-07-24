@@ -17,8 +17,10 @@ Among them, "TODO: remove before production" messages repeat on every request --
 
 === Step 1 -- Check Current Log Volume
 
-Open the OpenShift Console and navigate to *Observe -> Logs*.
+Switch to the *OCP Console* tab and navigate to *Observe -> Logs*.
 Filter for the `{tutorial_namespace}` namespace.
+
+Then switch to the *Terminal* tab and check the raw pod logs:
 
 [source,subs="attributes+",role="execute"]
 ----
@@ -44,6 +46,8 @@ The output shows the most frequently repeated log lines, confirming that a small
 Re-apply the data-profiling collector configuration with the `logdedup` processor added to the logs pipeline.
 
 === Step 1 -- Apply the Updated Collector CR
+
+Switch to the *Terminal* tab and apply the updated configuration:
 
 [source,subs="attributes+",role="execute"]
 ----
@@ -169,7 +173,7 @@ logdedup:
 
 === Step 1 -- Query Deduplicated Logs
 
-Navigate to *Observe -> Logs* in the OpenShift Console.
+Switch to the *OCP Console* tab and navigate to *Observe -> Logs*.
 Filter for the `{tutorial_namespace}` namespace and look for log entries that include the `log_count` attribute.
 
 Logs that previously appeared dozens of times per window now appear once with a `log_count` value showing the original frequency.

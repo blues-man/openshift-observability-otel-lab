@@ -13,9 +13,14 @@ In this module you will walk through every layer to confirm it is healthy and un
 
 == Getting Started: Log In to OpenShift
 
-Before running any commands in this lab, you need to log in to the OpenShift cluster from the embedded terminal on the right side of the screen.
+Before running any commands in this lab, you need to log in to the OpenShift cluster.
 
-Run the following command in the terminal:
+[TIP]
+====
+Use the *Terminal* tab on the right side of this tutorial window to run commands. When an exercise asks you to open the OpenShift Console, switch to the *OCP Console* tab instead.
+====
+
+Run the following command in the *Terminal*:
 
 [source,subs="attributes+",role="execute"]
 ----
@@ -106,7 +111,7 @@ cluster-logging.v...          Succeeded
 
 * *Cluster Observability Operator (COO)* -- provides MonitoringStack CRs and UIPlugin CRs for native OpenShift Console integrations (traces, logs, dashboards).
 
-* *Red Hat OpenShift Logging Operator* -- manages ClusterLogForwarder to route application and infrastructure logs into LokiStack.
+* *Red Hat OpenShift Logging Operator* -- manages LokiStack (the log aggregation backend) and the optional ClusterLogForwarder for cluster-wide container log collection. In this lab, application logs from instrumented services are sent to LokiStack primarily through the OpenTelemetry Collector using OTLP.
 
 == Exercise 2: Explore the Tracing Backend (TempoStack)
 
@@ -169,8 +174,11 @@ A *UIPlugin* (covered in Exercise 5) integrates the Tempo query interface direct
 
 == Exercise 3: Explore the Logging Backend (LokiStack)
 
-LokiStack provides horizontally-scalable log aggregation.
-The Logging Operator's *ClusterLogForwarder* routes application and infrastructure logs into LokiStack.
+LokiStack provides horizontally-scalable log aggregation and serves as the central logging backend in this lab.
+Two complementary paths send logs to LokiStack:
+
+* The *OpenTelemetry Collector* pushes application logs from instrumented services directly to LokiStack using the OTLP protocol -- this is the primary path you will work with throughout the lab.
+* The Logging Operator's *ClusterLogForwarder* collects container-level application and infrastructure logs from cluster nodes and forwards them to LokiStack for platform-wide coverage.
 
 === Step 1 -- Inspect the LokiStack CR
 
@@ -215,13 +223,20 @@ Key things to notice in the output:
 
 === How the pieces fit together
 
-The Logging Operator deploys a collector DaemonSet that reads container logs from every node.
-The ClusterLogForwarder tells those collectors *what* to collect and *where* to send it -- in this lab, everything goes to the LokiStack instance running in `{loki_namespace}`.
+This lab uses two complementary logging paths.
+The *OpenTelemetry Collector* receives application logs via the OTLP protocol from auto-instrumented services and exports them directly to LokiStack -- this is the path you will configure and optimize in later modules.
+In parallel, the *ClusterLogForwarder* deploys a DaemonSet that reads container logs from every node and forwards application and infrastructure logs to the same LokiStack instance in `{loki_namespace}`, providing cluster-wide log coverage.
 
 == Exercise 4: Explore Monitoring
 
 OpenShift ships with a built-in Prometheus stack for platform metrics.
-In this lab, *User Workload Monitoring* is enabled so application metrics are also collected, and the Cluster Observability Operator adds an OTLP-capable *MonitoringStack*.
+In this lab two complementary monitoring systems are configured:
+
+* *User Workload Monitoring (UWM)* -- the built-in OpenShift monitoring solution based on Prometheus. When enabled, a dedicated Prometheus instance scrapes `ServiceMonitor` and `PodMonitor` targets in user namespaces using the traditional *pull* model. UWM is tightly integrated with the platform and provides the familiar *Observe -> Metrics* and *Observe -> Alerting* console views.
+
+* *Cluster Observability Operator (COO) MonitoringStack* -- a separately managed monitoring stack that exposes an OTLP HTTP receiver. This lets the OpenTelemetry Collector *push* metrics directly using the native OTLP protocol, eliminating the need for a Prometheus remote-write adapter. COO also manages the UIPlugin CRs that add the *Traces* and *Logs* views to the console.
+
+In short, UWM handles traditional Prometheus scrape-based collection, while the COO MonitoringStack provides an OTLP-native ingestion point purpose-built for OpenTelemetry pipelines.
 
 === Step 1 -- Verify User Workload Monitoring
 
@@ -283,11 +298,7 @@ The Cluster Observability Operator registers *UIPlugins* that add observability 
 The UIPlugins are cluster-scoped resources managed by the Cluster Observability Operator.
 You can confirm they are active by opening the OpenShift Console and checking for the integrated observability views.
 
-Open the OpenShift Console at:
-
-{console_url}
-
-Navigate to each of the integrated observability views:
+Switch to the *OCP Console* tab on the right side of this tutorial window, then navigate to each of the integrated observability views:
 
 . *Observe -> Logs* -- powered by the LokiStack UIPlugin integration.
 Browse application and infrastructure logs using LogQL queries.
@@ -316,7 +327,7 @@ After completing this module you should be able to:
 
 * Describe how *TempoStack* stores and queries distributed traces using S3-compatible object storage.
 
-* Explain how *LokiStack* and the *ClusterLogForwarder* work together to collect and aggregate logs.
+* Explain how application logs reach *LokiStack* through the *OpenTelemetry Collector* (OTLP) and how the *ClusterLogForwarder* supplements this with cluster-wide container log collection.
 
 * Understand how the COO *MonitoringStack* accepts metrics via its OTLP HTTP receiver.
 
