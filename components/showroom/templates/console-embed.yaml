@@ -70,6 +70,12 @@ spec:
                         }
                       },
                       {
+                        "name": "Content-Security-Policy-Report-Only",
+                        "action": {
+                          "type": "Delete"
+                        }
+                      },
+                      {
                         "name": "Content-Security-Policy",
                         "action": {
                           "type": "Set",
