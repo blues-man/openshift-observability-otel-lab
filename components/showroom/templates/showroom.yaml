@@ -110,6 +110,86 @@ data:
     tutorial_namespace: {{ .Values.showroom.userdata.tutorialNamespace | default "tutorial-application" | quote }}
     user_name: {{ .Values.showroom.userdata.userName | default "user1" | quote }}
     user_password: {{ .Values.showroom.userdata.userPassword | default "openshift" | quote }}
+{{- if (.Values.showroom.userdata.keycloak).passwordLookup }}
+---
+# Resolver script: reads the RHDP Keycloak realm export and rewrites the
+# user_password line of user_data.yml with the real per-user password.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.showroom.name }}-userdata-resolver
+  namespace: {{ .Values.showroom.namespace }}
+data:
+  resolve.py: |
+    import json, os, sys
+
+    user = os.environ.get("USER_NAME", "")
+    path = "/user_data/user_data.yml"
+
+    raw = sys.stdin.read().strip()
+    pw = None
+    if raw:
+        try:
+            realm = json.loads(raw)
+            for u in realm.get("users", []):
+                if u.get("username") == user:
+                    for c in u.get("credentials", []):
+                        if c.get("type") == "password" and c.get("value"):
+                            pw = c["value"]
+                            break
+                    break
+        except Exception as e:
+            sys.stderr.write("resolve: failed to parse realm: %s\n" % e)
+
+    if not pw:
+        sys.stderr.write("resolve: no Keycloak password for '%s'; keeping fallback\n" % user)
+        sys.exit(0)
+
+    with open(path) as f:
+        lines = f.read().splitlines()
+    out, replaced = [], False
+    for ln in lines:
+        if ln.startswith("user_password:"):
+            out.append('user_password: "%s"' % pw)
+            replaced = True
+        else:
+            out.append(ln)
+    if not replaced:
+        out.append('user_password: "%s"' % pw)
+    with open(path, "w") as f:
+        f.write("\n".join(out) + "\n")
+    sys.stderr.write("resolve: user_password set from Keycloak for '%s'\n" % user)
+{{- if .Values.showroom.userdata.userName }}
+---
+# Allow the showroom ServiceAccount to read ONLY the Keycloak realm secret,
+# in the Keycloak namespace, so the init container can resolve the password.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Values.showroom.userdata.userName }}-showroom-kc-read
+  namespace: {{ .Values.showroom.userdata.keycloak.namespace | default "keycloak" }}
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames:
+  - {{ .Values.showroom.userdata.keycloak.realmSecret | default "keycloak-sso-realm" }}
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Values.showroom.userdata.userName }}-showroom-kc-read
+  namespace: {{ .Values.showroom.userdata.keycloak.namespace | default "keycloak" }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ .Values.showroom.userdata.userName }}-showroom-kc-read
+subjects:
+- kind: ServiceAccount
+  name: {{ .Values.showroom.name }}
+  namespace: {{ .Values.showroom.namespace }}
+{{- end }}
+{{- end }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -158,6 +238,32 @@ spec:
     spec:
       serviceAccountName: {{ .Values.showroom.name }}
       initContainers:
+      {{- if (.Values.showroom.userdata.keycloak).passwordLookup }}
+      - name: resolve-userdata
+        image: registry.redhat.io/openshift4/ose-cli:latest
+        env:
+        - name: USER_NAME
+          value: {{ .Values.showroom.userdata.userName | default "user1" | quote }}
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -o pipefail
+          cp /user_data_base/user_data.yml /user_data/user_data.yml
+          echo "resolve: base user_data copied; resolving password from Keycloak..."
+          oc extract secret/{{ .Values.showroom.userdata.keycloak.realmSecret | default "keycloak-sso-realm" }} \
+            -n {{ .Values.showroom.userdata.keycloak.namespace | default "keycloak" }} \
+            --keys={{ .Values.showroom.userdata.keycloak.realmSecretKey | default "sso-realm.json" }} \
+            --to=- 2>/dev/null | python3 /scripts/resolve.py \
+            || echo "resolve: Keycloak lookup unavailable, keeping fallback password"
+        volumeMounts:
+        - name: user-data-base
+          mountPath: /user_data_base
+        - name: user-data
+          mountPath: /user_data
+        - name: userdata-resolver
+          mountPath: /scripts
+      {{- end }}
       - name: git-cloner
         image: "quay.io/rhpds/git-cloner:v1.1.2"
         env:
@@ -270,9 +376,21 @@ spec:
       volumes:
       - name: showroom-files
         emptyDir: {}
+      {{- if (.Values.showroom.userdata.keycloak).passwordLookup }}
+      # Writable copy populated by the resolve-userdata init container.
+      - name: user-data
+        emptyDir: {}
+      - name: user-data-base
+        configMap:
+          name: {{ .Values.showroom.name }}-userdata
+      - name: userdata-resolver
+        configMap:
+          name: {{ .Values.showroom.name }}-userdata-resolver
+      {{- else }}
       - name: user-data
         configMap:
           name: {{ .Values.showroom.name }}-userdata
+      {{- end }}
       - name: nginx-config
         configMap:
           defaultMode: 420

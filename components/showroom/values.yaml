@@ -13,7 +13,19 @@ showroom:
     lokiNamespace: "openshift-logging"
     cooNamespace: "coo-observability"
     userName: "user1"
+    # Fallback password, used only when the Keycloak lookup below is disabled
+    # or cannot resolve a password for this user.
     userPassword: "openshift"
+    # On demo.redhat.com the per-user password is random and lives in the
+    # RHDP-provisioned Keycloak realm secret, not in this chart. When enabled,
+    # an init container resolves the real password for userName from that
+    # secret at pod start and writes it into user_data.yml. Falls back to
+    # userPassword above if the secret/user is not found.
+    keycloak:
+      passwordLookup: true
+      namespace: keycloak
+      realmSecret: keycloak-sso-realm
+      realmSecretKey: sso-realm.json
   nookbag:
     enabled: true
     bundleUrl: "https://github.com/rhpds/nookbag/releases/download/nookbag-v0.3.7/nookbag-v0.3.7.zip"
