@@ -89,7 +89,30 @@ spec:
                 }
               }
             }'
-          echo "IngressController patched. Waiting for router rollout..."
+          echo "IngressController patched. Waiting for router rollout to begin..."
+          # The ingress operator needs a moment to observe the spec change and
+          # roll a new router revision. `oc rollout status` on its own races: it
+          # can report the PREVIOUS generation as complete before the new rollout
+          # even starts, so the Job finishes while the console still serves
+          # X-Frame-Options: DENY for several minutes. Instead, poll the actual
+          # console response until the router has stripped the framing headers.
           oc rollout status deployment/router-default -n openshift-ingress --timeout=300s || true
+          CONSOLE_HOST=$(oc get route console -n openshift-console -o jsonpath='{.spec.host}')
+          echo "Verifying framing headers on https://${CONSOLE_HOST}/ ..."
+          for i in $(seq 1 60); do
+            HDRS=$(curl -sS -I -k --max-time 10 "https://${CONSOLE_HOST}/" 2>/dev/null || true)
+            if [ -z "$HDRS" ]; then
+              echo "  attempt ${i}: no response yet, waiting 10s..."
+              sleep 10
+              continue
+            fi
+            if echo "$HDRS" | grep -qi '^x-frame-options'; then
+              echo "  attempt ${i}: X-Frame-Options still present, waiting 10s..."
+              sleep 10
+            else
+              echo "  attempt ${i}: framing headers stripped. Console is now embeddable."
+              break
+            fi
+          done
           echo "Console embed patch complete."
 {{- end }}
