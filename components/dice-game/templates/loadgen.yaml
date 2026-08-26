@@ -30,7 +30,11 @@ spec:
               PLAYERS="Pavol Benedikt Yuri Kristina Severin"
               while true; do
                 for player in $PLAYERS; do
-                  curl -s -o /dev/null "http://frontend:4000/rolldice?player=${player}"
+                  # The frontend rolls the dice at "/" (it fans out to the
+                  # backends' own /rolldice routes internally). Hitting
+                  # /rolldice on the frontend returns 404 and never exercises
+                  # the backends.
+                  curl -s -o /dev/null "http://frontend:4000/?player=${player}"
                   sleep 0.$(( RANDOM % 5 + 1 ))
                 done
               done

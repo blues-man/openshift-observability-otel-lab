@@ -26,6 +26,22 @@ spec:
           image: {{ .Values.app.frontend.image }}
           ports:
             - containerPort: 4000
+          # Probes hit /health continuously, producing the health-check spans
+          # that Module 2 profiles and filters (telemetry.spans.health.count).
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 6
           env:
             - name: FRONTEND_PORT
               value: "4000"
@@ -76,6 +92,20 @@ spec:
           image: {{ .Values.app.backend1.image }}
           ports:
             - containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 6
           env:
             - name: OTEL_INSTRUMENTATION_ENABLED
               value: "true"
@@ -120,6 +150,20 @@ spec:
           image: {{ .Values.app.backend2.image }}
           ports:
             - containerPort: 5165
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5165
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5165
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 10
 ---
 apiVersion: v1
 kind: Service
@@ -159,6 +203,20 @@ spec:
           image: {{ .Values.app.backend3.image }}
           ports:
             - containerPort: 5165
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5165
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5165
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 6
           env:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://otel-collector.{{ .Values.app.namespace }}.svc:4317"
