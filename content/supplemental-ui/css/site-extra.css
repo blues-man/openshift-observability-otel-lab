@@ -20,12 +20,12 @@ video {
     max-width: none;
 }
 
-/* Mermaid diagrams: with useMaxWidth:false (see site.yml) mermaid renders
-   each SVG at its natural pixel size so the text stays readable even in the
-   narrow split-screen content pane. Center it, and allow horizontal scroll
-   when a wide diagram exceeds the pane instead of shrinking it. */
+/* Mermaid diagrams: mermaid (useMaxWidth:true, see site.yml) already emits
+   each SVG with width="100%" and an inline max-width of its natural size, so
+   it is responsive by itself -- it fills the content pane up to its natural
+   width and scales down in narrower panes. Just center it; don't cap or fix
+   the width, which would break that rescaling. */
 .doc .mermaid {
-    overflow-x: auto;
     text-align: center;
     margin: 1.5rem 0;
 }

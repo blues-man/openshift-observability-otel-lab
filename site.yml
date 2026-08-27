@@ -24,14 +24,14 @@ antora:
       script_stem: footer-scripts
       mermaid_initialize_options:
         start_on_load: true
-        # Render diagrams at natural size instead of shrinking to the
-        # container. In the split-screen showroom the content pane is narrow
-        # (e.g. w=50), so useMaxWidth:true made diagrams tiny. With this off,
-        # text stays full-size and the pane scrolls horizontally if needed.
+        # Keep useMaxWidth:true (the default) so diagrams stay responsive and
+        # rescale as the split-screen sidebar is dragged. Each SVG fills the
+        # content pane up to its natural width and scales down in narrower
+        # panes. To see a wide diagram larger, widen the pane.
         flowchart:
-          use_max_width: false
+          use_max_width: true
         sequence:
-          use_max_width: false
+          use_max_width: true
 
 runtime:
   cache_dir: ./.cache/antora
