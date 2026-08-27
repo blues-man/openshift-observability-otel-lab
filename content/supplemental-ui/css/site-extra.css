@@ -20,12 +20,16 @@ video {
     max-width: none;
 }
 
-/* Mermaid diagrams: mermaid (useMaxWidth:true, see site.yml) already emits
-   each SVG with width="100%" and an inline max-width of its natural size, so
-   it is responsive by itself -- it fills the content pane up to its natural
-   width and scales down in narrower panes. Just center it; don't cap or fix
-   the width, which would break that rescaling. */
+/* Mermaid diagrams. The RHDP theme wraps each diagram in an .imageblock that
+   is display:flex, so the .mermaid div (a flex item with no explicit width)
+   collapses to content size. The SVG's width="100%" then has no definite
+   containing width to resolve against and falls back to the SVG spec default
+   of 300px -- so diagrams rendered tiny and never rescaled with the pane.
+   Giving .mermaid width:100% restores a definite width, so the SVG fills the
+   content pane (up to its natural width via mermaid's useMaxWidth:true) and
+   rescales as the split-screen sidebar is dragged. */
 .doc .mermaid {
+    width: 100%;
     text-align: center;
     margin: 1.5rem 0;
 }
