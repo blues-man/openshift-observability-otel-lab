@@ -19,6 +19,23 @@ rules:
   verbs:
   - get
   - patch
+# The Job also reads the router deployment (to watch the rollout) and the
+# console route (to resolve the host it polls for framing headers). Without
+# these, `oc get route console` fails, CONSOLE_HOST is empty, and the verify
+# loop polls https:/// for the full 60 attempts (~10 min) before exiting 0 —
+# so the framing check never actually runs.
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - get
+- apiGroups:
+  - route.openshift.io
+  resources:
+  - routes
+  verbs:
+  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
