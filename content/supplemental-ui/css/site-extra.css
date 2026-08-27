@@ -20,17 +20,15 @@ video {
     max-width: none;
 }
 
-/* Mermaid diagrams: the @sntke extension renders each SVG with an inline
-   max-width equal to its (small) natural width plus width="100%", so
-   diagrams show up tiny and left-aligned. Override the inline cap so the
-   SVG scales up to the content width (capped for readability) and center it. */
+/* Mermaid diagrams: with useMaxWidth:false (see site.yml) mermaid renders
+   each SVG at its natural pixel size so the text stays readable even in the
+   narrow split-screen content pane. Center it, and allow horizontal scroll
+   when a wide diagram exceeds the pane instead of shrinking it. */
 .doc .mermaid {
-    display: flex;
-    justify-content: center;
+    overflow-x: auto;
+    text-align: center;
     margin: 1.5rem 0;
 }
 .doc .mermaid svg {
-    max-width: 900px !important;
-    width: 100%;
     height: auto;
 }
