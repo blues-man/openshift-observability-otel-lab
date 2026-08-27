@@ -11,7 +11,8 @@ showroom_antora_playbook: "site.yml"
 
 showroom_content_image: "quay.io/rhpds/showroom-content:v1.3.1"
 showroom_git_cloner_image: "quay.io/rhpds/git-cloner:v1.1.2"
-showroom_antora_image: "quay.io/rhpds/antora:v1.0.1"
+# v1.3 bundles @sntke/antora-mermaid-extension (needed to render [mermaid] blocks)
+showroom_antora_image: "quay.io/rhpds/antora:v1.3"
 showroom_proxy_image: "quay.io/rhpds/nginx:1.25"
 
 showroom_terminal_enabled: true

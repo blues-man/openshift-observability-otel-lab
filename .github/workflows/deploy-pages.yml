@@ -28,7 +28,7 @@ jobs:
 
       - name: Install Antora and extensions
         run: |
-          npm i -g @antora/cli@3.1 @antora/site-generator@3.1
+          npm i -g @antora/cli@3.1 @antora/site-generator@3.1 @sntke/antora-mermaid-extension
           npm install
 
       - name: Build site

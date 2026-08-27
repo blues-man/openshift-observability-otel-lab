@@ -15,6 +15,16 @@ ui:
     snapshot: true
   supplemental_files: ./content/supplemental-ui
 
+antora:
+  extensions:
+    # Renders [mermaid] diagram blocks. The npm dep is in package.json;
+    # Antora only loads it when it is registered here.
+    - require: '@sntke/antora-mermaid-extension'
+      mermaid_library_url: "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"
+      script_stem: footer-scripts
+      mermaid_initialize_options:
+        start_on_load: true
+
 runtime:
   cache_dir: ./.cache/antora
 
