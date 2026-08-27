@@ -19,3 +19,18 @@ video {
 .doc {
     max-width: none;
 }
+
+/* Mermaid diagrams: the @sntke extension renders each SVG with an inline
+   max-width equal to its (small) natural width plus width="100%", so
+   diagrams show up tiny and left-aligned. Override the inline cap so the
+   SVG scales up to the content width (capped for readability) and center it. */
+.doc .mermaid {
+    display: flex;
+    justify-content: center;
+    margin: 1.5rem 0;
+}
+.doc .mermaid svg {
+    max-width: 900px !important;
+    width: 100%;
+    height: auto;
+}
