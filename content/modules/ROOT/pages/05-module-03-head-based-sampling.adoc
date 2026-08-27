@@ -118,6 +118,13 @@ Switch to the *OCP Console* tab and navigate to *Observe -> Metrics*. Run the fo
 sum(rate(telemetry_spans_count_total[5m]))
 ----
 
+Span, metrics and logs per second by service:
+
+[source,role="copypaste"]
+----
+sum by (service_name) (rate(telemetry_spans_count_total[5m]))
+----
+
 You should see the span rate drop by approximately 50% compared to the baseline.
 
 image::head-sampling-before-after.png[Before and after span rate comparison showing ~50% reduction,link=self,window=blank,width=700,title="Span Rate Before and After 50% Head-Based Sampling"]
