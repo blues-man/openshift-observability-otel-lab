@@ -28,6 +28,35 @@ Before applying any configuration, take a moment to understand how the tail samp
 
 . Sampled traces are forwarded to the export pipeline; dropped traces are discarded.
 
+[mermaid]
+....
+flowchart LR
+    subgraph "All Spans Exported"
+        S1[Service A] -->|span| C[Collector]
+        S2[Service B] -->|span| C
+        S3[Service C] -->|span| C
+    end
+
+    subgraph "Collector Assembles Traces"
+        C --> B[Buffer & Group<br/>by Trace ID]
+    end
+
+    subgraph "Sampling Decision"
+        B --> D{Sample?}
+        D -->|"Error trace ✓"| E1[Export to collector]
+        D -->|"Slow trace ✓"| E1
+        D -->|"Normal trace ✗"| E2[Dropped]
+    end
+
+    style S1 fill:#4CAF50
+    style S2 fill:#4CAF50
+    style S3 fill:#4CAF50
+    style C fill:#FFB74D
+    style B fill:#FFB74D
+    style E1 fill:#4CAF50
+    style E2 fill:#64B5F6
+....
+
 === Trade-offs
 
 * *Smarter decisions* -- the collector sees the full picture: status codes, latency, attributes.
@@ -286,7 +315,47 @@ Each instance sees only a partial trace, leading to incorrect sampling decisions
 
 The standard production pattern uses two layers of collectors:
 
-image::tail-sampling-two-tier-architecture-placeholder.png[Two-tier tail sampling architecture with load-balancing and sampling tiers,link=self,window=blank]
+[mermaid]
+....
+flowchart LR
+    subgraph "Services"
+        S1[Service A]
+        S2[Service B]
+        S3[Service C]
+    end
+
+    subgraph "Load Balancing Layer"
+        LB1[Collector<br/>loadbalancing exporter]
+        LB2[Collector<br/>loadbalancing exporter]
+    end
+
+    subgraph "Tail Sampling Layer"
+        TS1[Collector<br/>tail_sampling]
+        TS2[Collector<br/>tail_sampling]
+        TS3[Collector<br/>tail_sampling]
+    end
+
+    S1 -->|spans| LB1
+    S2 -->|spans| LB1
+    S3 -->|spans| LB2
+
+    LB1 -->|"trace ID hash % 3 = 0"| TS1
+    LB1 -->|"trace ID hash % 3 = 1"| TS2
+    LB1 -->|"trace ID hash % 3 = 2"| TS3
+    LB2 -->|"trace ID hash % 3 = 0"| TS1
+    LB2 -->|"trace ID hash % 3 = 1"| TS2
+    LB2 -->|"trace ID hash % 3 = 2"| TS3
+
+    TS1 --> Backend[Tracing Backend]
+    TS2 --> Backend
+    TS3 --> Backend
+
+    style LB1 fill:#FFB74D
+    style LB2 fill:#FFB74D
+    style TS1 fill:#4CAF50
+    style TS2 fill:#4CAF50
+    style TS3 fill:#4CAF50
+....
 
 *Tier 1 -- Load-Balancing Collectors*
 
@@ -316,6 +385,38 @@ This means you can:
 * Store only 20% of traces for detailed debugging while still having complete metrics coverage.
 
 The span metrics connector sits in the pipeline before the tail sampling processor, feeding derived metrics to the metrics pipeline while the original spans continue to the sampling decision.
+
+[mermaid]
+....
+flowchart LR
+    subgraph "Services"
+        S1[Service A]
+        S2[Service B]
+    end
+
+    subgraph "Collector"
+        R[OTLP Receiver]
+        SM[spanmetrics<br/>connector]
+        TS[tail_sampling<br/>processor]
+        ME[Metrics Exporter]
+        TE[Traces Exporter]
+    end
+
+    S1 -->|spans| R
+    S2 -->|spans| R
+    R --> SM
+    SM -->|"100% metrics"| ME
+    R --> TS
+    TS -->|"10% traces"| TE
+
+    ME --> P[Prometheus]
+    TE --> J[Tempo]
+
+    style SM fill:#4CAF50
+    style TS fill:#FFB74D
+    style P fill:#64B5F6
+    style J fill:#4CAF50
+....
 
 [NOTE]
 ====

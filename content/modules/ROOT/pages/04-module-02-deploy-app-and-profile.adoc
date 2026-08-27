@@ -23,6 +23,24 @@ The dice game application is already running in the `{tutorial_namespace}` names
 
 A load generator sends continuous traffic so you always have fresh telemetry to work with.
 
+The frontend fans a single request out to all three backends and picks a winner:
+
+[mermaid]
+....
+sequenceDiagram
+    loadgen->>frontend: /?player1=bob&player2=alice&player3=charlie
+    frontend->>backend1: /rolldice?player=bob
+    frontend->>backend2: /rolldice?player=alice
+    frontend->>backend3: /rolldice?player=charlie
+    backend1-->>frontend: 3
+    frontend-->>loadgen: bob rolls: 3
+    backend2-->>frontend: 6
+    frontend-->>loadgen: alice rolls: 6
+    backend3-->>frontend: 4
+    frontend-->>loadgen: charlie rolls: 4
+    frontend-->>loadgen: alice wins
+....
+
 === Check Deployments and Pods
 
 Verify that all components are running from *Terminal*:

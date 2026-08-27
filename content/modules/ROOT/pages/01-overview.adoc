@@ -25,10 +25,36 @@ Each service is instrumented with OpenTelemetry and sends telemetry through an *
 * *LokiStack* -- aggregated logs.
 * *User Workload Monitoring (Prometheus)* -- metrics.
 
-[NOTE]
-====
-The architecture diagram will be available soon. The lab deploys: OpenTelemetry Collector -> TempoStack (traces) + LokiStack (logs) + COO MonitoringStack (metrics), with a polyglot dice game application auto-instrumented via the Instrumentation CR.
-====
+[mermaid]
+....
+flowchart LR
+    subgraph "tutorial-application"
+        F[Frontend<br/>Node.js]
+        B1[Backend1<br/>Python]
+        B2[Backend2<br/>Java]
+        B3[Backend3<br/>Go]
+        AC[OTel Collector]
+    end
+
+    subgraph "observability-backends"
+        T[TempoStack<br/>traces]
+        L[LokiStack<br/>logs]
+        P[User Workload Monitoring<br/>metrics]
+    end
+
+    F -->|OTLP| AC
+    B1 -->|OTLP| AC
+    B2 -->|OTLP| AC
+    B3 -->|OTLP| AC
+    AC -->|traces| T
+    AC -->|logs| L
+    AC -->|metrics| P
+
+    style AC fill:#FFB74D
+    style T fill:#4CAF50
+    style L fill:#FFB74D
+    style P fill:#64B5F6
+....
 
 == Pre-deployed Infrastructure
 
