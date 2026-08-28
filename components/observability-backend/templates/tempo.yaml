@@ -109,6 +109,13 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
+  # Expire stored traces so the tempo-minio object store does not fill up.
+  # Without retention the compactor never deletes blocks; the dice-game traffic
+  # from all users filled the (small) tempo-minio volume, MinIO returned S3 507
+  # on every write, and the trace query path went empty (no traces in the UI).
+  retention:
+    global:
+      traces: {{ .Values.backend.tempo.retention | default "48h" }}
   storage:
     secret:
       name: tempo-minio

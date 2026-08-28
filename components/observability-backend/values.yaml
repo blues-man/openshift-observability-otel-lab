@@ -3,10 +3,13 @@ backend:
   tempo:
     namespace: tempo-observability
     storageSize: 1Gi
+    # TempoStack compactor retention. Without it tempo-minio fills (S3 507) and
+    # the trace UI goes empty. Sized for 20-30 users; 5Gi filled in ~2.5 days.
+    retention: 48h
     minio:
       accessKey: tempo
       secretKey: supersecret
-      storageSize: 5Gi
+      storageSize: 10Gi
   loki:
     namespace: openshift-logging
     storageSize: 1Gi
