@@ -127,6 +127,14 @@ spec:
     - name: count-metrics
       port: 8889
       protocol: TCP
+  # Have the operator create a ServiceMonitor for the collector's :8888
+  # internal-telemetry endpoint so User Workload Monitoring scrapes the
+  # otelcol_* metrics (e.g. otelcol_processor_tail_sampling_*). Without this
+  # the console Observe -> Metrics queries in the sampling modules return no
+  # data. UWM must be enabled cluster-wide (enableUserWorkload: true).
+  observability:
+    metrics:
+      enableMetrics: true
   config:
     receivers:
       otlp:

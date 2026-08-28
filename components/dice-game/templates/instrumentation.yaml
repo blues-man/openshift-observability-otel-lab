@@ -31,6 +31,14 @@ spec:
         value: "http://otel-collector.{{ .Values.app.namespace }}.svc.cluster.local:4318"
   java:
     env:
+      # The Red Hat Java auto-instrumentation agent exports via HTTP/protobuf
+      # (OkHttp) by default. Without this override it inherits the top-level
+      # spec.exporter.endpoint (:4317, the gRPC port) and every export fails
+      # with "Connection reset" -- so backend2 produced NO traces. Point it at
+      # the collector's :4318 HTTP receiver, exactly like the nodejs/python
+      # blocks above.
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector.{{ .Values.app.namespace }}.svc.cluster.local:4318"
       - name: OTEL_LOGS_EXPORTER
         value: otlp
 {{- end }}

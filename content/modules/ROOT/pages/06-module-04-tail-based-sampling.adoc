@@ -102,6 +102,12 @@ metadata:
   namespace: {tutorial_namespace}
 spec:
   mode: deployment
+  # Expose the collector's internal telemetry (:8888) to User Workload
+  # Monitoring so you can query the tail_sampling metrics from the console
+  # Observe -> Metrics view in Exercise 3.
+  observability:
+    metrics:
+      enableMetrics: true
   config:
     receivers:
       otlp:
@@ -265,39 +271,61 @@ Compare what you see now with the unsampled or head-sampled trace volume from ea
 
 * Normal, healthy traces should appear in *reduced volume* -- only about 20% are retained by the `sample-rest` policy.
 
-image::tail-sampling-traces-filtered-placeholder.png[Traces view showing tail-sampled results with errors preserved and health checks removed,link=self,window=blank]
+=== Step 2 -- Observe the sampling decisions in the console
 
-=== Step 2 -- Check tail sampling metrics
+The tail sampling processor publishes internal metrics about every decision it makes.
+Because the collector was created with `observability.metrics.enableMetrics: true` (Step 1), the OpenTelemetry Operator scrapes the collector's `:8888` telemetry endpoint into *User Workload Monitoring*, so you can graph these metrics directly from the console -- no port-forwarding required.
 
-The tail sampling processor exposes internal metrics about its decisions.
-Switch to the *Terminal* tab and query them from the collector:
+Switch to the *OCP Console* tab and navigate to *Observe -> Metrics*.
+Run this query to see the overall keep-versus-drop rate:
 
 [source,subs="attributes+",role="execute"]
+----
+sum by (decision) (rate(otelcol_processor_tail_sampling_global_count_traces_sampled_total{namespace="{tutorial_namespace}"}[5m]))
+----
+
+You get two series:
+
+* `decision="sampled"` -- traces the policies decided to *keep*.
+* `decision="not_sampled"` -- traces the policies decided to *drop*.
+
+In a healthy run `not_sampled` sits well above `sampled`, because `drop-health` and the 20% `sample-rest` policy discard most routine traffic -- for example `not_sampled ~= 0.55/s` versus `sampled ~= 0.28/s`.
+
+To see *which policy* is responsible for each decision, break the count down per policy:
+
+[source,subs="attributes+",role="execute"]
+----
+sum by (policy, decision) (rate(otelcol_processor_tail_sampling_count_traces_sampled_total{namespace="{tutorial_namespace}"}[5m]))
+----
+
+This confirms the strategy is working as designed:
+
+* `keep-errors` and `keep-slow` contribute a small, steady stream of `decision="sampled"` traces.
+* `sample-rest` keeps roughly 20% of everything else.
+* `drop-health` shows only `decision="not_sampled"` -- every health-check trace is dropped.
+
+Finally, verify the policies are error-free:
+
+[source,subs="attributes+",role="execute"]
+----
+otelcol_processor_tail_sampling_sampling_policy_evaluation_error_total{namespace="{tutorial_namespace}"}
+----
+
+This must stay at *0*. A non-zero value means a policy is misconfigured (for example a bad attribute key or threshold).
+
+[TIP]
+====
+If User Workload Monitoring has not scraped the collector yet, the queries can be empty for the first minute or two after the collector restarts. Give it a moment and re-run them.
+
+You can still read the raw metrics straight from the collector if you prefer the terminal:
+
+[source,subs="attributes+"]
 ----
 oc port-forward -n {tutorial_namespace} deployment/{collector_name}-collector 18888:8888 &
 sleep 2
 curl -s localhost:18888/metrics | grep tail_sampling | grep -v '^#' | grep -v '_bucket{'
 kill %1 2>/dev/null
 ----
-
-Key metrics to look for in the output:
-
-* `otelcol_processor_tail_sampling_global_count_traces_sampled_total` -- the total number of traces that were sampled (kept) versus not sampled (dropped).
-
-* `otelcol_processor_tail_sampling_policy_evaluation_errors_total` -- should be zero; indicates policy misconfiguration if non-zero.
-
-* `otelcol_processor_tail_sampling_count_traces_on_policies_evaluated` -- per-policy breakdown showing which policies matched and their decisions.
-
-----
-# HELP otelcol_processor_tail_sampling_global_count_traces_sampled_total
-# TYPE otelcol_processor_tail_sampling_global_count_traces_sampled_total counter
-otelcol_processor_tail_sampling_global_count_traces_sampled_total{sampled="true"} ...
-otelcol_processor_tail_sampling_global_count_traces_sampled_total{sampled="false"} ...
-----
-
-[TIP]
-====
-If the `sampled=false` count is significantly higher than `sampled=true`, the policies are working as expected -- most healthy, fast traces are being dropped in favor of keeping only the interesting ones.
 ====
 
 == Exercise 4: Understand Scalable Tail Sampling (Theory)
