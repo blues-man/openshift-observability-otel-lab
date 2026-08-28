@@ -10,10 +10,14 @@ backend:
   loki:
     namespace: openshift-logging
     storageSize: 1Gi
+    # LokiStack compactor retention (days). Without it MinIO fills and the
+    # ingester stalls (S3 507) -> "empty ring" in Observe -> Logs.
+    retentionDays: 3
     minio:
       accessKey: loki
       secretKey: supersecret
-      storageSize: 5Gi
+      # Sized for 20-30 concurrent users; 5Gi filled in ~2.5 days.
+      storageSize: 10Gi
   coo:
     namespace: coo-observability
     retentionDays: 7

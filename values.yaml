@@ -75,10 +75,17 @@ components:
     loki:
       namespace: openshift-logging
       storageSize: 1Gi
+      # Log retention for the LokiStack compactor (see loki.yaml). Without a
+      # retention policy the compactor never deletes chunks and MinIO fills up,
+      # which stalls the ingester (S3 507) and yields an "empty ring" in
+      # Observe -> Logs. 3 days is plenty for a transient demo lab.
+      retentionDays: 3
       minio:
         accessKey: loki
         secretKey: supersecret
-        storageSize: 5Gi
+        # 5Gi filled in ~2.5 days; sized for 20-30 concurrent users. The Ceph
+        # RBD storageclass allows online expansion, so this can grow further.
+        storageSize: 10Gi
     coo:
       namespace: coo-observability
       retentionDays: 7

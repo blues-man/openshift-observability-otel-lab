@@ -103,6 +103,17 @@ metadata:
     argocd.argoproj.io/sync-wave: "2"
 spec:
   size: 1x.demo
+  # Expire stored logs so MinIO object storage does not fill up. With NO
+  # retention the compactor never deletes chunks; the dice-game apps across
+  # all users filled the (small) loki-minio volume in ~2.5 days, the ingester
+  # then failed every flush with S3 507 XMinioStorageFull, never passed its
+  # readiness probe, and -- being the sole ring member (1x.demo, RF 1) -- left
+  # the query path with an "empty ring" (Observe -> Logs returned nothing).
+  # Setting global retention enables the compactor's retention deletion.
+  limits:
+    global:
+      retention:
+        days: {{ .Values.backend.loki.retentionDays | default 3 }}
   storage:
     secret:
       name: loki-minio

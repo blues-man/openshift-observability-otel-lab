@@ -25,3 +25,4 @@ build/
 www/
 node_modules/
 .cache/
+.claude/
