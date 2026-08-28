@@ -21,7 +21,16 @@ antora:
     # Antora only loads it when it is registered here.
     - require: '@sntke/antora-mermaid-extension'
       mermaid_library_url: "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"
-      script_stem: footer-scripts
+      # Register the mermaid loader under a UNIQUE partial stem (its file is
+      # always partials/mermaid-script.hbs). With the default/previous
+      # script_stem: footer-scripts the extension registered a SECOND partial
+      # with stem "footer-scripts" at uiLoaded -- after the theme and our
+      # supplemental partials -- so {{> footer-scripts}} resolved to the
+      # mermaid-only file and dropped the theme's clipboard.js/site.js, killing
+      # the copy/execute buttons. A unique stem stops the collision; our
+      # supplemental partials/footer-scripts.hbs pulls mermaid back in with
+      # {{> mermaid-script}}.
+      script_stem: mermaid-script
       mermaid_initialize_options:
         start_on_load: true
         # Keep useMaxWidth:true (the default) so diagrams stay responsive and

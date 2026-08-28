@@ -1,3 +1,13 @@
-<script src="{{uiRootPath}}/js/vendor/clipboard.js"></script>
-<script src="{{uiRootPath}}/js/site.js"></script>
-<script async src="{{uiRootPath}}/js/vendor/highlight.js"></script>
+<script defer src="{{uiRootPath}}/js/vendor/clipboard.js"></script>
+<script defer src="{{uiRootPath}}/js/site.js"></script>
+<script defer src="{{uiRootPath}}/js/vendor/highlight.js"></script>
+{{#if env.SITE_SEARCH_PROVIDER}}
+{{> search-scripts}}
+{{/if}}
+{{!--
+  Pull in the mermaid loader that @sntke/antora-mermaid-extension registers
+  under the "mermaid-script" stem (see site.yml). Keeping mermaid on its own
+  stem means the extension no longer overrides this footer-scripts partial, so
+  the theme's clipboard.js/site.js above keep rendering the copy/execute icons.
+--}}
+{{> mermaid-script}}
