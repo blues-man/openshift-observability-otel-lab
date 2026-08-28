@@ -207,7 +207,12 @@ assert_eq "LokiStack Ready condition" "True" "$loki_ready"
 # --- No ACTIVE storage-full flush errors (short window; a wider window would
 #     catch already-resolved incidents and cry wolf right after recovery) ---
 if [[ -n "$LOKI_INGESTER" ]]; then
-  n507="$(oc logs -n "$LOKI_NAMESPACE" "${LOKI_INGESTER#pod/}" --since=5m 2>/dev/null | grep -c 'StorageFull\|507')"
+  # Match only real storage-full flush failures: MinIO's marker, an HTTP 507
+  # status, or an error-level flush failure. A bare '507' also appears inside
+  # fingerprint hashes (fp=50788b...) and time-shard ids on successful-flush
+  # INFO lines, so anchor on error semantics to avoid false positives.
+  n507="$(oc logs -n "$LOKI_NAMESPACE" "${LOKI_INGESTER#pod/}" --since=5m 2>/dev/null \
+    | grep -icE 'XMinioStorageFull|status code: 507|(level=error).*(flush|storage)')"
   [[ "${n507:-0}" -eq 0 ]] && pass "no active 507/StorageFull in ingester logs (5m)" \
     || fail "$n507 StorageFull/507 flush errors in ingester logs (MinIO full)"
 fi
