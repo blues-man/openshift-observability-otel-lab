@@ -9,10 +9,10 @@ include::partial$_attributes.adoc[]
 | Resource | Value
 
 | OpenShift Console
-| {console_url}
+| {console_url}[{console_url}^]
 
 | API URL
-| {api_url}
+| {api_url}[{api_url}^]
 
 | Username
 | {user_name}

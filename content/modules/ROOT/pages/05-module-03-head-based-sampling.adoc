@@ -10,7 +10,7 @@ Head-based sampling makes the decision at the *start* of a trace, before any out
 
 == Exercise 1: Understand Head-Based Sampling
 
-Head-based sampling decides whether to record a trace *at creation time*. The decision is encoded in the https://www.w3.org/TR/trace-context/#traceparent-header[W3C `traceparent` header] and propagated to every downstream service in the request chain. No span in the trace can override the original decision.
+Head-based sampling decides whether to record a trace *at creation time*. The decision is encoded in the https://www.w3.org/TR/trace-context/#traceparent-header[W3C `traceparent` header^] and propagated to every downstream service in the request chain. No span in the trace can override the original decision.
 
 [mermaid]
 ....

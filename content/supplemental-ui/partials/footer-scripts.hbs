@@ -11,3 +11,22 @@
   the theme's clipboard.js/site.js above keep rendering the copy/execute icons.
 --}}
 {{> mermaid-script}}
+{{!--
+  Force every EXTERNAL link to open in a new browser tab. The lab content is
+  served inside the Showroom iframe; a same-tab external link (e.g. the
+  OpenShift Console / API URLs in the Access Information table, which are bare
+  {console_url}/{api_url} attribute auto-links that can't take an AsciiDoc "^"
+  suffix) would navigate the iframe away and break the lab. Internal page-to-
+  page links are relative (no http/https) and are left untouched.
+--}}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var here = window.location.hostname;
+    document.querySelectorAll('a[href^="http://"], a[href^="https://"]').forEach(function (a) {
+      if (a.hostname && a.hostname !== here) {
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+      }
+    });
+  });
+</script>
