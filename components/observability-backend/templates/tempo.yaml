@@ -115,7 +115,7 @@ spec:
   # on every write, and the trace query path went empty (no traces in the UI).
   retention:
     global:
-      traces: {{ .Values.backend.tempo.retention | default "48h" }}
+      traces: {{ .Values.backend.tempo.retention | default "24h" }}
   storage:
     secret:
       name: tempo-minio

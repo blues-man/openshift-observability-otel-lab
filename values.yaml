@@ -69,13 +69,18 @@ components:
       namespace: tempo-observability
       storageSize: 1Gi
       # TempoStack compactor retention. Without it the tempo-minio store fills
-      # (S3 507 on writes) and the trace UI goes empty. See loki.retentionDays.
-      retention: 48h
+      # (S3 507 on writes) and the trace UI goes empty. Traces are the heaviest
+      # signal here (~9GiB per 24h across 20 users), so keep retention SHORT:
+      # with 48h the compactor could not prune data younger than 48h and the
+      # disk filled before any block aged out, deadlocking compaction (it needs
+      # free space to write merged blocks). 24h keeps steady-state well under
+      # the volume with compaction headroom.
+      retention: 24h
       minio:
         accessKey: tempo
         secretKey: supersecret
-        # Sized for 20-30 concurrent users; 5Gi filled in ~2.5 days.
-        storageSize: 10Gi
+        # Sized for 20-30 users: 24h of traces (~9-13GiB) + compaction headroom.
+        storageSize: 20Gi
     loki:
       namespace: openshift-logging
       storageSize: 1Gi
@@ -87,9 +92,10 @@ components:
       minio:
         accessKey: loki
         secretKey: supersecret
-        # 5Gi filled in ~2.5 days; sized for 20-30 concurrent users. The Ceph
-        # RBD storageclass allows online expansion, so this can grow further.
-        storageSize: 10Gi
+        # Sized for 20-30 users with 3-day retention. Loki carries BOTH
+        # application and infrastructure logs (the latter is heavy), so give it
+        # headroom beyond the 10Gi first cut. Ceph RBD allows online expansion.
+        storageSize: 15Gi
     coo:
       namespace: coo-observability
       retentionDays: 7
