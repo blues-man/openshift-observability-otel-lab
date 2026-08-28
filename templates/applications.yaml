@@ -77,7 +77,16 @@ spec:
       - RespectIgnoreDifferences=true
 {{- end }}
 
-{{- if .Values.components.diceGame.enabled }}
+{{- /*
+  Single-tenant dice-game app. Only rendered when user.count == 0. In
+  multi-tenant mode (user.count > 0) the per-user ApplicationSet
+  ({{ .Release.Name }}-dice-game-users) owns observability-app-<user>
+  instead. Rendering both makes field-content-dice-game and
+  field-content-dice-game-user1 fight over the SAME resources in
+  observability-app-user1 (SharedResourceWarning), which is why user1
+  kept breaking. See templates/applicationset-users.yaml.
+*/}}
+{{- if and .Values.components.diceGame.enabled (eq (int .Values.user.count) 0) }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -155,7 +164,18 @@ spec:
       - CreateNamespace=true
 {{- end }}
 
-{{- if .Values.components.showroom.enabled }}
+{{- /*
+  Single-tenant showroom app. Only rendered when user.count == 0. In
+  multi-tenant mode the per-user ApplicationSet
+  ({{ .Release.Name }}-showroom-users) owns showroom-<user> instead.
+  Rendering both makes field-content-showroom and
+  field-content-showroom-user1 fight over the shared keycloak
+  Role/RoleBinding user1-showroom-kc-read -- the single-tenant one sets
+  the subject namespace to "showroom", which revokes user1's SA access to
+  the Keycloak realm secret and reverts the resolved password back to the
+  default. See templates/applicationset-users.yaml.
+*/}}
+{{- if and .Values.components.showroom.enabled (eq (int .Values.user.count) 0) }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
